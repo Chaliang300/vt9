@@ -36,12 +36,13 @@ namespace VT9Status
         private const string RunName = "VT9Status_Ces";
         private HwndSource source;
         private bool frameExtended;
+        private bool backdropAvailable;   // DWM 系统背衬可用（ExtendFrame + 属性 38 都成功）
+        private bool backdropShownOnce;   // 首帧显示由 OnSourceInitialized/OnContentRendered 负责
         private DispatcherTimer backdropActivation;
         private DispatcherTimer deferredConfig;
         private int trayPixelSize = 16;
         private readonly Canvas surface = new Canvas();
         private CheckBox autoCheck, alertsCheck;
-        private TextBlock autoStatusText, alertsStatusText;
         private Style buttonStyle;
 
         internal MainForm(bool hidden)
@@ -88,7 +89,16 @@ namespace VT9Status
             {
                 if (!IsVisible) return;
                 RefreshState(); Invalidate();
-                // 首帧的背景已在 OnSourceInitialized / OnContentRendered 里铺过，这里不再重复请求。
+                // 每次显示都重建背衬：窗口「先创建、后显示」或 Hide()/Show() 之后，DWM 会沿用
+                // 旧窗框缓存，整窗被画成一块不透明灰矩形——表现为「从托盘恢复后背景异常」。
+                Dispatcher.BeginInvoke(new System.Action(delegate
+                {
+                    if (IsDisposed || !IsVisible) return;
+                    EnsureForeground();   // 先让窗口真的到最前，再重算窗框与材质
+                    ApplyBackdrop();
+                }), DispatcherPriority.Background);
+                if (backdropShownOnce) Program.Log("背景：窗口重新显示，重建系统背衬。");
+                backdropShownOnce = true;
                 // 设备配置读取改到入场动画之后：它一完成就会触发整页重绘，和卡片入场抢 UI 线程。
                 if (deferredConfig == null)
                 {
@@ -124,11 +134,46 @@ namespace VT9Status
             base.OnSourceInitialized(e); source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             source.AddHook(WindowMessage); ApplyBackdrop();
         }
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            SetBackdropSurface();   // 材质若已就绪就交出透明底，让 Acrylic 透出来
+        }
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            // 实测失焦后 DWM 仍在合成 Acrylic，这里不再改铺实色（那是旧版「灰板」的来源）。
+            SetBackdropSurface();
+        }
         protected override void OnContentRendered(EventArgs e)
         {
             base.OnContentRendered(e);
             Program.Mark("首帧渲染完成");
             ApplyBackdrop();
+        }
+        // 背景异常的两个真实成因（都靠抓屏逐帧定位，见 artifacts/tray-diag/bg_core.py）：
+        //
+        // 1) 「先创建、后显示」的窗口没有被 DWM 重算窗框。--tray 自启后第一次从托盘打开、
+        //    以及 Hide() 之后再 Show()，DWM 仍按旧窗框缓存合成，整窗被画成一整块不透明的
+        //    灰矩形，圆角与透明一起丢。此时属性 38 读回 3 也没用，它只是记录的值。
+        //    对策：每次显示都重做帧扩展，并用 SWP_FRAMECHANGED 逼 DWM 丢掉窗框缓存（见 ApplyBackdrop）。
+        //
+        // 2) 曾经认为「Win11 只为活动窗口合成 Acrylic」，于是失去焦点就铺一层实色兜底。
+        //    实测（Win11 24H2，属性 38=3）窗口失焦后 DWM 仍在合成，抓屏四角仍是各不相同的
+        //    壁纸色；而那层兜底本身是常数色，反倒把窗口变成一块灰板。对策：删掉按焦点切换的逻辑。
+        //
+        // 现在只在材质真的不是 Acrylic 时才铺设计兜底色，其余一律交给 DWM。
+        private void SetBackdropSurface()
+        {
+            int material = 0;
+            bool acrylic = false;
+            if (backdropAvailable && frameExtended && source != null && source.Handle != IntPtr.Zero)
+            {
+                try { acrylic = DwmGetWindowAttribute(source.Handle, 38, out material, 4) == 0 && material == 3; }
+                catch (DllNotFoundException) { acrylic = false; }
+                catch (EntryPointNotFoundException) { acrylic = false; }
+            }
+            Background = acrylic ? Brushes.Transparent : Brush(Theme.WindowFallback);
         }
         private void ApplyBackdrop()
         {
@@ -139,21 +184,34 @@ namespace VT9Status
                 bool composed;
                 if (!SystemParameters.HighContrast && DwmIsCompositionEnabled(out composed) == 0 && composed)
                 {
-                    if (!frameExtended)
-                    {
-                        source.CompositionTarget.BackgroundColor = Colors.Transparent;
-                        Margins margins = new Margins { Left = -1, Right = -1, Top = -1, Bottom = -1 };
-                        frameExtended = DwmExtendFrameIntoClientArea(source.Handle, ref margins) == 0;
-                        int light = 0; DwmSetWindowAttribute(source.Handle, 20, ref light, 4);
-                        int rounded = 2; DwmSetWindowAttribute(source.Handle, 33, ref rounded, 4);
-                    }
+                    // 帧扩展与两条属性每次都要重做：窗口「先创建、后显示」时（--tray 自启形态）
+                    // 或在 Hide()/Show() 之后，DWM 会丢掉这些状态，只做一次的话窗口会变成
+                    // 透明底 + 无背衬 = 透出黑色，叠上白色蒙层就成了中灰。
+                    source.CompositionTarget.BackgroundColor = Colors.Transparent;
+                    Margins margins = new Margins { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+                    frameExtended = DwmExtendFrameIntoClientArea(source.Handle, ref margins) == 0;
+                    int light = 0; DwmSetWindowAttribute(source.Handle, 20, ref light, 4);
+                    int rounded = 2; DwmSetWindowAttribute(source.Handle, 33, ref rounded, 4);
                     int none = 1;
                     enabled = frameExtended && DwmSetWindowAttribute(source.Handle, 38, ref none, 4) == 0;
+                    // 关键一步。窗口「先创建、后显示」（--tray 自启、或 Hide() 之后再 Show()）时，
+                    // DWM 仍按旧的窗框缓存合成：整窗被画成一整块不透明的灰矩形，圆角和透明一起丢，
+                    // 看起来就是背景坏掉。属性 38 读回 3 也没用——那只是记录的值，窗框没重算。
+                    // SWP_FRAMECHANGED 让 DWM 丢掉缓存、按当前样式重新生成窗框。
+                    if (enabled) SetWindowPos(source.Handle, IntPtr.Zero, 0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
                 }
             }
             catch (DllNotFoundException) { }
             catch (EntryPointNotFoundException) { }
-            Background = enabled ? Brushes.Transparent : Brush(Theme.WindowFallback);
+            backdropAvailable = enabled;
+            if (enabled)
+            {
+                int current = -1;
+                try { DwmGetWindowAttribute(source.Handle, 38, out current, 4); } catch { }
+                Program.Log("背景：帧扩展=" + frameExtended + " 属性38=" + current + " 前台=" + (GetForegroundWindow() == source.Handle) + " 可见=" + IsVisible);
+            }
+            SetBackdropSurface();
             if (backdropActivation != null) backdropActivation.Stop();
             if (!enabled) { Program.Log("背景：原生 Acrylic 不可用，使用实色回退。"); return; }
             // Reproduce the working None -> Acrylic transition on separate compositor frames.
@@ -165,7 +223,7 @@ namespace VT9Status
                 if (IsDisposed || source == null || !IsVisible) return;
                 int acrylic = 3;
                 int hr = DwmSetWindowAttribute(source.Handle, 38, ref acrylic, 4);
-                if (hr != 0) Background = Brush(Theme.WindowFallback);
+                SetBackdropSurface();   // 读到 3 才真的放透明，失败则保留设计兜底色
                 surface.InvalidateVisual();
                 Program.Log(hr == 0 ? "背景：已自动完成无材质 → 原生 Acrylic，后续由 DWM 合成。" : "背景：Acrylic 激活失败，HRESULT=" + hr);
             };
@@ -181,6 +239,7 @@ namespace VT9Status
         private IntPtr WindowMessage(IntPtr hwnd, int message, IntPtr wparam, IntPtr lparam, ref bool handled)
         {
             if (message == 0x0219 && wparam.ToInt64() == 7 && !exiting) { reader.ReconnectForDeviceChange(); charger.RequestRefresh(); }
+            if (message == 0x0006) Dispatcher.BeginInvoke(new System.Action(SetBackdropSurface));   // WM_ACTIVATE：焦点变了就重算底
             if (message == 0x02E0) { trayPixelSize = IconArtwork.TraySize(); iconKey = ""; }   // 跨屏换 DPI 时重算图标像素尺寸
             if (message == 0x031E || message == 0x001A || message == 0x031A) Dispatcher.BeginInvoke(new System.Action(ApplyBackdrop));
             // 任务栏换深浅色后托盘图标必须立刻反色，否则会和任务栏同色看不见。
@@ -191,7 +250,20 @@ namespace VT9Status
         { base.OnStateChanged(e); if (WindowState == WindowState.Minimized) HideToTray(); }
         protected override void OnClosing(CancelEventArgs e)
         {
-            if (configBusy && !sessionEnding) { e.Cancel = true; exiting = false; dpiMessage = "配置写入正在完成，请稍候再退出。"; ShowPanel(); }
+            Program.Log("窗口：收到关闭请求 主动退出=" + exiting + " 配置忙=" + configBusy + " 会话结束=" + sessionEnding
+                + " 托盘可用=" + (tray != null && tray.IsRegistered));
+            // 配置写入/读取还没结束时，不能立刻销毁窗口——写到一半退出可能让设备配置停在半截状态。
+            // 但「让用户点了退出却退不掉」是错的：以前这里 e.Cancel = true 并把窗口重新弹出来，
+            // 点「退出」反而把窗口拉回前台，看起来就是「退出没反应」。现在改为：先挂住这次退出，
+            // 等正在进行的操作收尾后再自动继续退出（见 ResumePendingExit），用户不需要再点一次。
+            if (configBusy && !sessionEnding)
+            {
+                e.Cancel = true;
+                pendingExit = true;
+                dpiMessage = "正在完成配置读写，随之退出…";
+                Invalidate();
+                Program.Log("退出：配置读写进行中，挂起退出等待收尾。");
+            }
             // 没有托盘时“退出”菜单也点不到，关闭窗口必须真的退出，否则会留下一个既无界面
             // 也无图标的进程，还一直占着单实例互斥锁，导致之后双击启动都没有反应。
             else if (!exiting && (tray == null || !tray.IsRegistered))
@@ -201,6 +273,18 @@ namespace VT9Status
             }
             else if (!exiting) { e.Cancel = true; HideToTray(); }
             base.OnClosing(e);
+        }
+
+        // 挂起的退出：配置读写一收尾就自动接着退，不再要求用户重按一次。
+        private bool pendingExit;
+
+        internal void ResumePendingExit()
+        {
+            if (!pendingExit || IsDisposed) return;
+            pendingExit = false;
+            Program.Log("退出：配置读写已完成，继续退出。");
+            exiting = true;
+            Close();
         }
         protected override void OnClosed(EventArgs e)
         {
@@ -217,6 +301,13 @@ namespace VT9Status
         [StructLayout(LayoutKind.Sequential)] private struct Margins { public int Left, Right, Top, Bottom; }
         [DllImport("dwmapi.dll")] private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref Margins margins);
         [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+        [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attr, out int value, int size);
         [DllImport("dwmapi.dll")] private static extern int DwmIsCompositionEnabled([MarshalAs(UnmanagedType.Bool)] out bool enabled);
+        [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
+        [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr insertAfter,
+            int x, int y, int width, int height, uint flags);
+        private const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004,
+            SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020;
     }
 }

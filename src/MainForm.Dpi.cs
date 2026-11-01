@@ -12,6 +12,17 @@ namespace VT9Status
         private bool[] draftEnabled = { true, true, true, false, false, false, false };
         private int draftActive = 2;
         private bool configBusy, configAutoTried;
+
+        // 配置读写收尾的统一出口：清标志、刷新界面，并把挂起的退出接着做完。
+        // 四个调用点（读配置 / 写 DPI / 写参数 / 另一处写入）都必须走这里，
+        // 否则「点退出 → 等配置写完 → 自动退出」会漏掉某条路径。
+        private void EndConfigWork(bool refresh)
+        {
+            configBusy = false;
+            if (IsDisposed) return;
+            if (refresh) Invalidate();
+            ResumePendingExit();
+        }
         private string dpiMessage = "尚未读取档位。点击“读取档位”获取设备现有设置。";
         private string overviewMessage = "尚未读取设备配置。";
         private string paramsMessage = "";
@@ -131,7 +142,7 @@ namespace VT9Status
             }
             finally
             {
-                if (!IsDisposed) { configBusy = false; Invalidate(); }
+                EndConfigWork(true);
             }
         }
 
@@ -285,7 +296,7 @@ namespace VT9Status
             }
             finally
             {
-                if (!IsDisposed) configBusy = false;
+                EndConfigWork(false);
             }
             // C# 5 不允许在 catch 里等待：回读放在 try 之外。
             if (refresh) await RefreshAfterFailure();
@@ -336,7 +347,7 @@ namespace VT9Status
             }
             finally
             {
-                if (!IsDisposed) configBusy = false;
+                EndConfigWork(false);
             }
             if (refresh) await RefreshAfterFailure();
             if (!IsDisposed) Invalidate();
@@ -421,9 +432,10 @@ namespace VT9Status
             int milliseconds = TimingBlock.DebounceMs[index];
             RunWrite(press ? "正在写入按下消抖" : "正在写入抬起消抖", delegate(IDpiChannel channel)
             {
-                TimingBlock block = SettingsController.SetDebounce(channel, press, milliseconds);
-                return "消抖已写入并回读：按下 " + (block.PressMs.HasValue ? block.PressMs.Value.ToString() : "—") +
-                    " ms / 抬起 " + (block.ReleaseMs.HasValue ? block.ReleaseMs.Value.ToString() : "—") + " ms";
+                // 页签上已经同时显示「按下 x ms / 抬起 y ms」，写成功后再回显一遍是重复信息，
+                // 所以成功时不再留文字；失败仍由 WriteConfigAsync 回显异常原因。
+                SettingsController.SetDebounce(channel, press, milliseconds);
+                return "";
             });
         }
 
@@ -475,7 +487,7 @@ namespace VT9Status
             }
             finally
             {
-                if (!IsDisposed) { configBusy = false; Invalidate(); }
+                EndConfigWork(true);
             }
         }
 

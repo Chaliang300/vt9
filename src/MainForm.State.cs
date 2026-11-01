@@ -151,17 +151,64 @@ namespace VT9Status
             return tray != null && tray.TryGetRect(out rect);
         }
 
-        private void ShowPanel()        {
+        private void ShowPanel()
+        {
             if (IsDisposed) return;
             if (!IsVisible) Show();
             WindowState = System.Windows.WindowState.Normal;
             Activate();
+            EnsureForeground();
             RefreshState();
             Invalidate();
         }
 
+        // 从托盘恢复时窗口常常「显示出来了但不是活动窗口」——Activate() 会被前台锁忽略。
+        // 抢前台的目的只是让窗口出现在最前面、键盘焦点落回来；背景材质不再依赖这一点
+        // （实测 DWM 对非活动窗口同样合成 Acrylic，之前按焦点切实色兜底反而造成了灰板）。
+        private void EnsureForeground()
+        {
+            if (source == null) return;
+            IntPtr hwnd = source.Handle;
+            if (hwnd == IntPtr.Zero || GetForegroundWindow() == hwnd) return;
+            try
+            {
+                bool topmost = Topmost;
+                Topmost = true; Topmost = false;
+                if (topmost) Topmost = true;
+                SetForegroundWindow(hwnd);
+                if (GetForegroundWindow() != hwnd) ForceForeground(hwnd);
+                Program.Log(GetForegroundWindow() == hwnd
+                    ? "窗口：从托盘恢复并已取得前台。"
+                    : "窗口：恢复后仍非前台（前台锁拒绝），窗口已置于最前。");
+            }
+            catch (Exception ex) { Program.Log("窗口：获取前台失败，" + ex.Message); }
+            SetBackdropSurface();   // 材质过渡若尚未生效，这里继续用兜底色
+        }
+
+        // SetForegroundWindow 被前台锁挡住时的兜底：把当前前台线程的输入队列临时接过来，
+        // 抢到之后再解除。托盘应用恢复窗口基本都要走这一手，否则窗口会以非活动状态出现。
+        private static void ForceForeground(IntPtr hwnd)
+        {
+            IntPtr foreground = GetForegroundWindow();
+            uint pid;
+            uint foregroundThread = foreground == IntPtr.Zero ? 0 : GetWindowThreadProcessId(foreground, out pid);
+            uint self = GetCurrentThreadId();
+            bool attached = foregroundThread != 0 && foregroundThread != self
+                && AttachThreadInput(foregroundThread, self, true);
+            try
+            {
+                BringWindowToTop(hwnd);
+                SetForegroundWindow(hwnd);
+            }
+            finally
+            {
+                if (attached) AttachThreadInput(foregroundThread, self, false);
+            }
+        }
+
         private void ExitApp()
         {
+            Program.Log("退出：收到退出请求，开始关闭。");
             exiting = true;
             Close();
         }
@@ -408,5 +455,11 @@ namespace VT9Status
             void Resolve(IntPtr hwnd, uint fFlags);
             void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
         }
+
+        // 抢前台用（见 ForceForeground）
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+        [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+        [DllImport("user32.dll")] private static extern bool AttachThreadInput(uint attachTo, uint attachFrom, bool attach);
+        [DllImport("user32.dll")] private static extern bool BringWindowToTop(IntPtr hwnd);
     }
 }

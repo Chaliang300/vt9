@@ -885,40 +885,46 @@ namespace VT9Status
             ovDebounce = values[3]; ovMotion = values[4]; ovStage = values[5];
 
             // 3. 启动与提醒卡 (150, 436, 846, 146)
+            // 行结构统一为「左侧标签 + 描述，右侧开关胶囊」：开关固定在右边界（846-24-48=774），
+            // 状态文字作为次要信息右对齐到开关左侧，不再是左侧胶囊 + 右侧文字。
             Canvas cardStartup = Card(host, 150, 436, 846, 146);
             CardTitle(cardStartup, "启动与提醒", 24, 18, 140, 26);
 
-            // 行 1 (中心 493, relative 65): Switch (24, 52, 48, 26)
-            autoCheck = new CheckBox { Content = "自动启动", Style = switchStyle, FontSize = Fonts.SwitchLabel, FontWeight = FontWeights.SemiBold, Foreground = Theme.Brush(Theme.Ink) };
-            WireSwitch(autoCheck);
-            PlaceIn(cardStartup, autoCheck, 24, 52, 150, 26);
-            autoCheck.Click += delegate
+            // 行 1 (中心 65)
+            Action applyAuto = delegate
             {
                 autoStartOn = autoCheck.IsChecked == true;
                 ApplyAutoStart(autoStartOn);
                 Invalidate();
             };
-            TextBlock autoDesc = Label(cardStartup, "开机自动启动服务并收起至托盘", Fonts.Sub, 180, 54, 320, 22);
+            TextBlock autoLabel = Label(cardStartup, "自动启动", Fonts.Body, 24, 52, 90, 24);
+            autoLabel.FontWeight = FontWeights.SemiBold;
+            autoLabel.Cursor = Cursors.Hand;
+            autoCheck = new CheckBox { Style = switchStyle, Width = 48, Height = 26, Cursor = Cursors.Hand };
+            WireSwitch(autoCheck);
+            PlaceIn(cardStartup, autoCheck, 774, 52, 48, 26);
+            autoCheck.Click += delegate { applyAuto(); };
+            autoLabel.MouseLeftButtonDown += delegate { autoCheck.IsChecked = !(autoCheck.IsChecked == true); applyAuto(); };
+            TextBlock autoDesc = Label(cardStartup, "开机自动启动服务并收起至托盘", Fonts.Sub, 124, 53, 330, 22);
             autoDesc.Foreground = Theme.Brush(Theme.Muted);
-            autoStatusText = Label(cardStartup, "未启用", Fonts.Body, 580, 54, 240, 22);
-            autoStatusText.FontWeight = FontWeights.SemiBold;
-            autoStatusText.TextAlignment = TextAlignment.Right;
 
-            // 行 2 (中心 539, relative 111): Switch (24, 98, 48, 26)
-            alertsCheck = new CheckBox { Content = "低电量提醒", Style = switchStyle, FontSize = Fonts.SwitchLabel, FontWeight = FontWeights.SemiBold, Foreground = Theme.Brush(Theme.Ink) };
-            WireSwitch(alertsCheck);
-            PlaceIn(cardStartup, alertsCheck, 24, 98, 150, 26);
-            alertsCheck.Click += delegate
+            // 行 2 (中心 111)
+            Action applyAlerts = delegate
             {
                 preferences.LowBatteryNotification = alertsCheck.IsChecked == true;
                 preferences.Save();
                 Invalidate();
             };
-            TextBlock alertsDesc = Label(cardStartup, "鼠标电池电量低于 20% 时弹出通知气泡预警", Fonts.Sub, 180, 100, 370, 22);
+            TextBlock alertsLabel = Label(cardStartup, "低电量提醒", Fonts.Body, 24, 98, 100, 24);
+            alertsLabel.FontWeight = FontWeights.SemiBold;
+            alertsLabel.Cursor = Cursors.Hand;
+            alertsCheck = new CheckBox { Style = switchStyle, Width = 48, Height = 26, Cursor = Cursors.Hand };
+            WireSwitch(alertsCheck);
+            PlaceIn(cardStartup, alertsCheck, 774, 98, 48, 26);
+            alertsCheck.Click += delegate { applyAlerts(); };
+            alertsLabel.MouseLeftButtonDown += delegate { alertsCheck.IsChecked = !(alertsCheck.IsChecked == true); applyAlerts(); };
+            TextBlock alertsDesc = Label(cardStartup, "鼠标电池电量低于 20% 时弹出通知气泡预警", Fonts.Sub, 124, 99, 400, 22);
             alertsDesc.Foreground = Theme.Brush(Theme.Muted);
-            alertsStatusText = Label(cardStartup, "未开启", Fonts.Body, 580, 100, 240, 22);
-            alertsStatusText.FontWeight = FontWeights.SemiBold;
-            alertsStatusText.TextAlignment = TextAlignment.Right;
 
 
         }
@@ -1130,6 +1136,11 @@ namespace VT9Status
             tab.BorderThickness = new Thickness(0);
         }
 
+        private static string DebounceText(int? milliseconds)
+        {
+            return milliseconds.HasValue ? milliseconds.Value + " ms" : "—";
+        }
+
         private void SyncChips(Button[] chips, int selected)
         {
             if (chips == null) return;
@@ -1223,11 +1234,18 @@ namespace VT9Status
 
             // 4. 按键防抖延迟卡片 (150, 462, 846, 120)
             Canvas cardDebounce = Card(host, 150, 462, 846, 120);
-            CardTitle(cardDebounce, "按键防抖延迟", 24, 16, 180, 26);
+            CardTitle(cardDebounce, "按键防抖延迟", 24, 10, 150, 26);
+            // 官方在标题后带了功能说明，这里照抄——第一次看到「防抖」的人不必猜这张卡在做什么。
+            TextBlock debounceHint = Label(cardDebounce, "（按键延迟设置，防止按键误触双击）", Fonts.Sub, 170, 13, 380, 20);
+            debounceHint.Foreground = Theme.Brush(Theme.Muted);
+            debounceHint.IsHitTestVisible = false;
 
+            // 两个页签直接把「当前值」写在标签上（按下 8 ms / 抬起 8 ms）。
+            // 两侧数值相同时，只换页签颜色的话看不出任何变化，容易被当成点了没反应；
+            // 把两个值并排摆出来，切到哪一侧、另一侧是多少一目了然。
             debounceTabPress = new Button
             {
-                Content = "按下", Style = chipStyle, Width = 70, Height = 30,
+                Content = "按下 —", Style = chipStyle, Width = 112, Height = 30,
                 FontSize = Fonts.Chip, FontWeight = FontWeights.SemiBold,
                 Background = Theme.NewBrush(Theme.Accent),
                 Foreground = Brushes.White,
@@ -1236,11 +1254,11 @@ namespace VT9Status
             };
             AttachPillFeedback(debounceTabPress, 0.95, Theme.ChipHover, Theme.ChipBg);
             debounceTabPress.Click += delegate { SelectDebounceTab(true); };
-            PlaceIn(cardDebounce, debounceTabPress, 670, 8, 70, 30);
+            PlaceIn(cardDebounce, debounceTabPress, 590, 8, 112, 30);
 
             debounceTabRelease = new Button
             {
-                Content = "抬起", Style = chipStyle, Width = 70, Height = 30,
+                Content = "抬起 —", Style = chipStyle, Width = 112, Height = 30,
                 FontSize = Fonts.Chip, FontWeight = FontWeights.SemiBold,
                 Background = Theme.NewBrush(Theme.ChipBg),
                 Foreground = Theme.Brush(Theme.FooterInk),
@@ -1249,7 +1267,7 @@ namespace VT9Status
             };
             AttachPillFeedback(debounceTabRelease, 0.95, Theme.ChipHover, Theme.ChipBg);
             debounceTabRelease.Click += delegate { SelectDebounceTab(false); };
-            PlaceIn(cardDebounce, debounceTabRelease, 746, 8, 70, 30);
+            PlaceIn(cardDebounce, debounceTabRelease, 710, 8, 112, 30);
 
             double[] dbOffsets = { 0, 80, 160, 240, 324, 408, 492 };
             double[] dbWidths = { 72, 72, 72, 76, 76, 76, 76 };
@@ -1338,18 +1356,8 @@ namespace VT9Status
                 ? "第 " + (current.Dpi.ActiveIndex + 1) + " 档 · " + current.Dpi.Current.ToString() + " DPI"
                 : "—");
 
-            if (autoStatusText != null)
-            {
-                autoStatusText.Text = autoStartOn ? "已启用 · 开机自启" : "未启用";
-                SolidColorBrush autoInk = MutableForeground(autoStatusText, autoStartOn ? Theme.Ink : Theme.Faint);
-                if (autoInk != null) Transition.AnimateColorTo(autoInk, Theme.Media(autoStartOn ? Theme.Ink : Theme.Faint), 180);
-            }
-            if (alertsStatusText != null)
-            {
-                alertsStatusText.Text = preferences.LowBatteryNotification ? "已开启 · 阈值 20%" : "未开启";
-                SolidColorBrush alertsInk = MutableForeground(alertsStatusText, preferences.LowBatteryNotification ? Theme.Ink : Theme.Faint);
-                if (alertsInk != null) Transition.AnimateColorTo(alertsInk, Theme.Media(preferences.LowBatteryNotification ? Theme.Ink : Theme.Faint), 180);
-            }
+            // 「启动与提醒」两行的右侧状态文字已移除：开关本身的颜色就是状态，
+            // 再写一遍“已启用 / 已开启”属于重复表达。开关旁只保留描述文字。
 
         }
 
@@ -1472,8 +1480,9 @@ namespace VT9Status
 
                 bool tabPress = editingPress;
                 SyncChips(debounceChips, timing == null ? -1 : (tabPress ? timing.PressIndex : timing.ReleaseIndex));
-                SyncTab(debounceTabPress, tabPress, "按下");
-                SyncTab(debounceTabRelease, !tabPress, "抬起");
+                // 页签标签带值：两侧数值相同时也能看出自己在编辑哪一侧、另一侧是多少。
+                SyncTab(debounceTabPress, tabPress, "按下 " + DebounceText(timing == null ? null : timing.PressMs));
+                SyncTab(debounceTabRelease, !tabPress, "抬起 " + DebounceText(timing == null ? null : timing.ReleaseMs));
 
                 bool enabled = current != null && !configBusy;
                 SetEnabled(pollingChips, enabled);

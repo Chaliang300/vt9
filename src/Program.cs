@@ -17,6 +17,8 @@ namespace VT9Status
         internal static readonly string DataDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
         private static readonly object LogGate = new object();
         internal static EventWaitHandle Wake;
+        // 新实例把前台权限转交给正在运行的实例（ASFW_ANY = -1）。
+        [DllImport("user32.dll")] private static extern bool AllowSetForegroundWindow(int processId);
 
         [STAThread]
         private static void Main(string[] args)
@@ -83,7 +85,14 @@ namespace VT9Status
                 {
                     if (!created)
                     {
-                        try { using (EventWaitHandle wake = EventWaitHandle.OpenExisting("Local\\VT9Status_Ces_Show")) wake.Set(); }
+                        try
+                        {
+                            // 新进程是被用户双击/开始菜单拉起的，手里有前台权限。
+                            // 把它转交出去，正在运行的实例才抢得到前台；否则窗口会以非活动状态弹出，
+                            // Win11 的 Acrylic 随即退化成一块实色（看起来就是「背景异常」）。
+                            AllowSetForegroundWindow(-1);   // ASFW_ANY
+                            using (EventWaitHandle wake = EventWaitHandle.OpenExisting("Local\\VT9Status_Ces_Show")) wake.Set();
+                        }
                         catch (WaitHandleCannotBeOpenedException) { }
                         return;
                     }
@@ -171,6 +180,25 @@ namespace VT9Status
             app.SessionEnding += delegate { window.ShutdownForSession(); };
             if (Array.IndexOf(args, "--tray") < 0) window.Show();
             Mark("窗口已显示（等待首帧）");
+            // 诊断：--backdrop=0..4 直接指定 DWM 系统背衬材质（0 自动 / 1 无 / 2 Mica / 3 Acrylic / 4 MicaAlt），
+            // 用于对照“非活动窗口下各材质的观感”，不参与正常流程。
+            int backdropFlag = Array.IndexOf(args, "--backdrop");
+            if (backdropFlag >= 0 && backdropFlag + 1 < args.Length)
+            {
+                int mode;
+                if (int.TryParse(args[backdropFlag + 1], out mode))
+                {
+                    int fixedMode = mode;
+                    System.Windows.Threading.DispatcherTimer once = new System.Windows.Threading.DispatcherTimer
+                    { Interval = TimeSpan.FromMilliseconds(1200) };   // 等 ApplyBackdrop 的 120ms 切换跑完
+                    once.Tick += delegate
+                    {
+                        once.Stop();
+                        window.SetBackdropForPreview(fixedMode);
+                    };
+                    once.Start();
+                }
+            }
             app.Run();
         }
 
