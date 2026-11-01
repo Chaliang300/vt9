@@ -110,6 +110,8 @@ namespace VT9Status
             if (x < area.Left) x = area.Left;
             if (y + size.Height > area.Bottom) y = area.Bottom - size.Height;
             if (y < area.Top) y = area.Top;
+            Program.Log("托盘菜单：锚点 " + anchor.X + "," + anchor.Y + "，尺寸 " + size.Width + "x" + size.Height
+                + "，位置 " + x + "," + y + "，工作区 " + area);
             trayMenu.Show(new Point(x, y));
         }
 

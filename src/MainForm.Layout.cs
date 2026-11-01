@@ -230,10 +230,10 @@ namespace VT9Status
             btn.RenderTransform = st;
             btn.RenderTransformOrigin = new Point(0.5, 0.5);
 
-            // hover 进入前的底色。选中态会被 SyncChips 改成 #304FFE，
-            // 如果离开时硬写回未选中色，选中的 chip 会在鼠标划过之后"掉色"一秒。
-            Color hoverBase = Colors.Transparent;
-            bool hovering = false;
+            // 静止色（“平时该是什么颜色”）统一放在 Tag 里，由 SyncChips / SyncTab 在设置选中态时写入。
+            // 以前鼠标离开时硬写回 normalColor（未选中色），于是滑动切页时鼠标扫过选中的 pill，
+            // 它就被刷成浅色、且选中态要等下一次配置刷新才回来——表现为“几次滑动之后蓝色没了”。
+            if (normalColor.HasValue) btn.Tag = Theme.Media(normalColor.Value);
 
             btn.PreviewMouseDown += delegate
             {
@@ -249,26 +249,18 @@ namespace VT9Status
             {
                 Transition.AnimateTo(st, ScaleTransform.ScaleXProperty, 1.0, 140, ReferenceEase.Feedback);
                 Transition.AnimateTo(st, ScaleTransform.ScaleYProperty, 1.0, 140, ReferenceEase.Feedback);
-                bool wasHovering = hovering;
-                hovering = false;
                 SolidColorBrush scb = btn.Background as SolidColorBrush;
-                if (scb != null && !scb.IsFrozen)
-                {
-                    Color back = wasHovering ? hoverBase : (normalColor.HasValue ? Theme.Media(normalColor.Value) : scb.Color);
-                    Transition.AnimateColorTo(scb, back, 120);
-                }
+                if (scb == null || scb.IsFrozen) return;
+                // 回到“静止色”，而不是无条件的未选中色：选中态在鼠标划过之后必须原样保留。
+                Color back = btn.Tag is Color ? (Color)btn.Tag : scb.Color;
+                Transition.AnimateColorTo(scb, back, 120);
             };
             if (hoverColor.HasValue)
             {
                 btn.MouseEnter += delegate
                 {
                     SolidColorBrush scb = btn.Background as SolidColorBrush;
-                    if (scb != null && !scb.IsFrozen)
-                    {
-                        hoverBase = scb.Color;
-                        hovering = true;
-                        Transition.AnimateColorTo(scb, Theme.Media(hoverColor.Value), 120);
-                    }
+                    if (scb != null && !scb.IsFrozen) Transition.AnimateColorTo(scb, Theme.Media(hoverColor.Value), 120);
                 };
             }
         }
@@ -1080,15 +1072,18 @@ namespace VT9Status
         {
             if (tab == null) return;
             tab.Content = caption;
+            System.Drawing.Color pickTab = selected ? Theme.Accent : Theme.ChipBg;
+            Color restingTab = Theme.Media(pickTab);
+            tab.Tag = restingTab;
             SolidColorBrush bg = tab.Background as SolidColorBrush;
             if (bg == null || bg.IsFrozen)
             {
-                bg = Theme.NewBrush(selected ? Theme.Accent : Theme.ChipBg);
+                bg = Theme.NewBrush(pickTab);
                 tab.Background = bg;
             }
             else
             {
-                Transition.AnimateColorTo(bg, Theme.Media(selected ? Theme.Accent : Theme.ChipBg), 180);
+                Transition.AnimateColorTo(bg, restingTab, 180);
             }
 
             SolidColorBrush fg = tab.Foreground as SolidColorBrush;
@@ -1114,16 +1109,20 @@ namespace VT9Status
                 Button chip = chips[i];
                 if (chip == null) continue;
                 bool on = i == selected;
+                // 静止色同时写进 Tag，悬停反馈离开时按它回位（见 AttachPillFeedback）。
+                System.Drawing.Color pick = on ? Theme.Accent : Theme.ChipBg;
+                Color resting = Theme.Media(pick);
+                chip.Tag = resting;
                 SolidColorBrush bg = chip.Background as SolidColorBrush;
                 if (bg == null || bg.IsFrozen)
                 {
-                    bg = Theme.NewBrush(on ? Theme.Accent : Theme.ChipBg);
+                    bg = Theme.NewBrush(pick);
                     chip.Background = bg;
                 }
                 else
                 {
                     // 180ms 交叉过渡：选中态不再"一帧换色"（原则 3）
-                    Transition.AnimateColorTo(bg, Theme.Media(on ? Theme.Accent : Theme.ChipBg), 180);
+                    Transition.AnimateColorTo(bg, resting, 180);
                 }
 
                 SolidColorBrush fg = chip.Foreground as SolidColorBrush;
