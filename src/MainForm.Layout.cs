@@ -55,7 +55,6 @@ namespace VT9Status
         private TranslateTransform lensContentTranslate;
 
         // ── 顶栏与页脚 ──
-        private TextBlock deviceText;
         private Button globalReadBtn;
         private TextBlock globalReadBtnText;
         private TextBlock globalReadTimeText;
@@ -454,15 +453,12 @@ namespace VT9Status
             drag.MouseLeftButtonDown += delegate { DragMove(); };
 
             // 标题「雷柏 VT9 控制台」: 左 32, 行中心 34, 20px SemiBold #111827
+            // 标题下方的连接状态行（“接口已连接（2.4G 接收器）”）已移除：连接方式在概况页
+            // 与设备卡里都有，顶栏只留标题，视觉更干净。deviceLine 本身仍参与状态判定与摘要。
             TextBlock title = Label(surface, "雷柏 VT9 控制台", Fonts.Title, 32, 20, 320, 28);
             title.FontWeight = FontWeights.Bold;
             title.Foreground = Theme.Brush(Theme.Ink);
             title.IsHitTestVisible = false;
-
-            // 状态行 deviceText: 左 32, 行中心 52, 13.5px Regular #64748B
-            deviceText = Label(surface, "正在接收设备状态", Fonts.Sub, 32, 42.5, 540, 19);
-            deviceText.Foreground = Theme.Brush(Theme.Muted);
-            deviceText.IsHitTestVisible = false;
 
             // 「读取于 09:36:41」: 右对齐 838, 行中心 38, 13.5px Regular #64748B
             globalReadTimeText = Label(surface, "尚未读取", Fonts.Sub, 495, 34.5, 240, 19);
@@ -517,7 +513,10 @@ namespace VT9Status
                 Transition.AnimateColorTo(closeBg, System.Windows.Media.Color.FromArgb(0, 0, 0, 0), 120);
                 Transition.AnimateColorTo(closeInk, Theme.Media(Theme.InkSoft), 120);
             };
-            close.Click += delegate { HideToTray(); };
+            // 走 Close() 而不是直接 HideToTray()：托盘可用时 OnClosing 会取消关闭并收起到托盘，
+            // 托盘不可用时（例如进程被限制、Shell_NotifyIcon 被拒）就真的退出。
+            // 直接调 HideToTray() 会让“托盘注册失败”这种情形下窗口既关不掉、也收不进托盘，成为死路。
+            close.Click += delegate { Close(); };
             PlaceIn(surface, close, 865, 25, 36, 36);
 
 
@@ -652,16 +651,6 @@ namespace VT9Status
             };
             Canvas.SetLeft(pillBorder, 0); Canvas.SetTop(pillBorder, 0);
             pillCanvas.Children.Add(pillBorder);
-
-            // 顶部镜面高光：容器 (15, top+1.5) → (65, top+1.5)，即胶囊局部 (5, 1.5) → (55, 1.5)
-            Line mirrorLine = new Line
-            {
-                X1 = 5, Y1 = 1.5, X2 = 55, Y2 = 1.5,
-                Stroke = Brushes.White, StrokeThickness = 1.2,
-                StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
-                Opacity = 0.9, IsHitTestVisible = false
-            };
-            pillCanvas.Children.Add(mirrorLine);
 
             Canvas.SetLeft(pillCanvas, 10); Canvas.SetTop(pillCanvas, 9);
             navDockContainer.Children.Add(pillCanvas);
@@ -1288,8 +1277,6 @@ namespace VT9Status
         {
             if (IsDisposed) return;
 
-            SetText(deviceText, deviceLine);
-            if (deviceText != null) deviceText.ToolTip = deviceLine;
             SetText(PageModeText, snapshot.Open ? (deviceLine.IndexOf("有线") >= 0 ? "已连接 · USB" : "已连接 · 2.4G") : "未连接");
 
             ConfigSnapshot currentConfig = config;

@@ -128,11 +128,17 @@ namespace VT9Status
             if (!tray.IsRegistered)
             {
                 WindowState = System.Windows.WindowState.Normal;
-                dpiMessage = "托盘图标注册失败，已保留窗口。请查看诊断日志。";
+                dpiMessage = "托盘图标不可用，已保留窗口；关闭窗口即退出。";
                 Invalidate();
-                Program.Log("托盘：注册未成功，取消隐藏主窗口。");
+                // 点一次“收起”就记一行会刷满日志（连点几次就是几行），这里只记第一次。
+                if (!trayHintLogged)
+                {
+                    trayHintLogged = true;
+                    Program.Log("托盘：注册未成功，取消隐藏主窗口（托盘不可用时关闭窗口即退出）。");
+                }
                 return;
             }
+            trayHintLogged = false;
             Program.Log("托盘：图标已注册，收起主窗口。");
             Hide();
         }

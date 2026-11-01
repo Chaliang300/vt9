@@ -24,7 +24,7 @@ namespace VT9Status
         private Icon trayIcon;
         private string iconKey, lastSignature;
         private int updateQueued;
-        private bool exiting, notified, initializing = true, autoStartOn, IsDisposed;
+        private bool exiting, notified, initializing = true, autoStartOn, IsDisposed, trayHintLogged;
         private bool taskbarLight;
         private DeviceSnapshot snapshot = new DeviceSnapshot();
         private ChargeSnapshot charge = new ChargeSnapshot();
