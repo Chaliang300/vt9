@@ -424,13 +424,19 @@ namespace VT9Status
  </ControlTemplate></Setter.Value></Setter>
 </Style>".Replace("{SLIDER_ACCENT}", Theme.HexSliderAccent), "slider");
 
+            Program.Mark("样式解析完成");
             BuildChrome();
+            Program.Mark("顶栏构建完成");
 
             // 页面优先挂入 surface
             pageOverview = NewPage(); BuildOverviewPage();
+            Program.Mark("概况页构建完成");
             pageDpi = NewPage(); BuildDpiPage();
+            Program.Mark("DPI 页构建完成");
             pageParams = NewPage(); BuildParamsPage();
+            Program.Mark("参数页构建完成");
             pageSettings = NewPage(); BuildSettingsPage();
+            Program.Mark("设置页构建完成");
 
             // 硬口径：把 navDockContainer 放到 surface.Children 最后，确保 Dock 处于最顶层
             BuildNav();

@@ -53,7 +53,7 @@ namespace VT9Status
             bool wired = snapshot.Open ? deviceLine.IndexOf("有线", StringComparison.Ordinal) >= 0
                 : queryConnected && charge.Last.ProductId == 0x4191;
             TrayState trayState = IconArtwork.ResolveTrayState(connected, chargingNow, wired);
-            int traySize = IconArtwork.TraySize();
+            int traySize = trayPixelSize;   // 已在构造时读一次注册表，DPI 变化时（WM_DPICHANGED）重算
             string key = IconArtwork.TrayKey(traySize, trayState, level, taskbarLight);
             if (key != iconKey)
             {
@@ -66,13 +66,13 @@ namespace VT9Status
                 : shown == null ? "VT9 · 尚未收到电量，等待设备报告"
                 : "VT9 · 上次电量 " + shown.Battery + "% · " + shown.ReceivedUtc.ToLocalTime().ToString("HH:mm:ss") + " · 等待更新";
             if (fromQuery && level.HasValue) tooltip = "VT9 · 电量 " + level.Value + "% · " + charge.Text;
-            tray.Text = tooltip.Length > 63 ? tooltip.Substring(0, 63) : tooltip;
+            if (tray != null) tray.Text = tooltip.Length > 63 ? tooltip.Substring(0, 63) : tooltip;
 
             if (batteryFresh && level.HasValue && level.Value > 20) notified = false;
             if (batteryFresh && level.HasValue && level.Value <= 20 && !notified && preferences.LowBatteryNotification)
             {
                 notified = true;
-                tray.ShowBalloonTip(5000, "VT9 电量较低", "当前剩余电量 " + level.Value + "%，请按需充电。", ToolTipIcon.Warning);
+                if (tray != null) tray.ShowBalloonTip(5000, "VT9 电量较低", "当前剩余电量 " + level.Value + "%，请按需充电。", ToolTipIcon.Warning);
             }
 
             // Repaint only when something the surface shows actually changed: repainting the whole
@@ -92,6 +92,7 @@ namespace VT9Status
         // Rebuild the ring on each actual percentage, mode, theme or DPI change.
         private void UpdateTrayIcon(int size, TrayState state, int? level)
         {
+            if (tray == null) return;   // 托盘还没建好（首帧之后的延迟初始化）
             using (Bitmap bitmap = IconArtwork.Tray(size, state, level, taskbarLight))
             {
                 IntPtr handle = bitmap.GetHicon();
@@ -124,6 +125,7 @@ namespace VT9Status
 
         private void HideToTray()
         {
+            if (tray == null) return;   // 托盘还没建好，等同不可用
             tray.EnsureRegistered();
             if (!tray.IsRegistered)
             {

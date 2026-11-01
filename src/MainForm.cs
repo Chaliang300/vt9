@@ -18,7 +18,7 @@ namespace VT9Status
     {
         private readonly HidReader reader;
         private readonly ChargeMonitor charger;
-        private readonly NativeTrayIcon tray;
+        private NativeTrayIcon tray;   // 推迟到首帧之后创建，见构造函数里的 BeginInvoke
         private readonly DispatcherTimer clock;
         private readonly Preferences preferences;
         private Icon trayIcon;
@@ -37,6 +37,8 @@ namespace VT9Status
         private HwndSource source;
         private bool frameExtended;
         private DispatcherTimer backdropActivation;
+        private DispatcherTimer deferredConfig;
+        private int trayPixelSize = 16;
         private readonly Canvas surface = new Canvas();
         private CheckBox autoCheck, alertsCheck;
         private TextBlock autoStatusText, alertsStatusText;
@@ -45,6 +47,7 @@ namespace VT9Status
         internal MainForm(bool hidden)
         {
             preferences = Preferences.Load(); autoStartOn = IsAutoStart();
+            Program.Mark("设置读取完成");
             Title = "雷柏 VT9 控制台"; Width = 1020; Height = 606;
             WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -55,12 +58,11 @@ namespace VT9Status
             FontSize = Fonts.Body; Foreground = Brush(Theme.Ink);
             ApplyWindowIcon();
             BuildSurface();
-            BuildTrayMenu();
+            Program.Mark("界面构建完成");
             taskbarLight = IconArtwork.LightTaskbar();
-            tray = new NativeTrayIcon { Text = "VT9 · 等待设备报告", ContextMenuStrip = trayMenu, Visible = true };
-            tray.Click += delegate { ShowPanel(); };
-            tray.MenuRequested += delegate { ShowTrayMenu(); };
+            trayPixelSize = IconArtwork.TraySize();
             reader = new HidReader(Program.Log); charger = new ChargeMonitor();
+            Program.Mark("设备通道初始化完成");
             reader.Changed += OnReaderChanged; charger.Changed += OnReaderChanged;
             clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             clock.Tick += delegate
@@ -69,10 +71,31 @@ namespace VT9Status
                 if (Program.Wake != null && Program.Wake.WaitOne(0)) ShowPanel();
             };
             clock.Start(); initializing = false; RefreshState();
+            Program.Mark("首次状态刷新完成");
+            // 托盘（HwndSource + WinForms 菜单，实测约 110ms）不影响首帧，整体推迟到窗口画出来之后：
+            // 先建菜单再建图标，最后补一次状态刷新把提示文字与图标补上。
+            Dispatcher.BeginInvoke(new System.Action(delegate
+            {
+                if (IsDisposed) return;
+                if (trayMenu == null) BuildTrayMenu();
+                tray = new NativeTrayIcon { Text = "VT9 · 等待设备报告", ContextMenuStrip = trayMenu, Visible = true };
+                tray.Click += delegate { ShowPanel(); };
+                tray.MenuRequested += delegate { ShowTrayMenu(); };
+                iconKey = ""; RefreshState();
+                Program.Mark("托盘菜单与图标就绪");
+            }), DispatcherPriority.Background);
             IsVisibleChanged += delegate
             {
                 if (!IsVisible) return;
-                RefreshState(); Invalidate(); ApplyBackdrop(); EnsureConfigLoaded();
+                RefreshState(); Invalidate();
+                // 首帧的背景已在 OnSourceInitialized / OnContentRendered 里铺过，这里不再重复请求。
+                // 设备配置读取改到入场动画之后：它一完成就会触发整页重绘，和卡片入场抢 UI 线程。
+                if (deferredConfig == null)
+                {
+                    deferredConfig = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+                    deferredConfig.Tick += delegate { deferredConfig.Stop(); EnsureConfigLoaded(); };
+                }
+                deferredConfig.Stop(); deferredConfig.Start();
             };
             // For --tray, Program runs the dispatcher without showing this window at all.
         }
@@ -104,6 +127,7 @@ namespace VT9Status
         protected override void OnContentRendered(EventArgs e)
         {
             base.OnContentRendered(e);
+            Program.Mark("首帧渲染完成");
             ApplyBackdrop();
         }
         private void ApplyBackdrop()
@@ -134,7 +158,7 @@ namespace VT9Status
             if (!enabled) { Program.Log("背景：原生 Acrylic 不可用，使用实色回退。"); return; }
             // Reproduce the working None -> Acrylic transition on separate compositor frames.
             // This one-shot runs only when showing/reconfiguring the window, never while dragging.
-            backdropActivation = new DispatcherTimer(DispatcherPriority.ContextIdle) { Interval = TimeSpan.FromMilliseconds(250) };
+            backdropActivation = new DispatcherTimer(DispatcherPriority.ContextIdle) { Interval = TimeSpan.FromMilliseconds(120) };
             backdropActivation.Tick += delegate
             {
                 backdropActivation.Stop();
@@ -157,6 +181,7 @@ namespace VT9Status
         private IntPtr WindowMessage(IntPtr hwnd, int message, IntPtr wparam, IntPtr lparam, ref bool handled)
         {
             if (message == 0x0219 && wparam.ToInt64() == 7 && !exiting) { reader.ReconnectForDeviceChange(); charger.RequestRefresh(); }
+            if (message == 0x02E0) { trayPixelSize = IconArtwork.TraySize(); iconKey = ""; }   // 跨屏换 DPI 时重算图标像素尺寸
             if (message == 0x031E || message == 0x001A || message == 0x031A) Dispatcher.BeginInvoke(new System.Action(ApplyBackdrop));
             // 任务栏换深浅色后托盘图标必须立刻反色，否则会和任务栏同色看不见。
             if (message == 0x001A || message == 0x031A) Dispatcher.BeginInvoke(new System.Action(RefreshTaskbarTheme));
@@ -183,7 +208,7 @@ namespace VT9Status
             IsDisposed = true; clock.Stop(); if (backdropActivation != null) backdropActivation.Stop();
             if (source != null) { source.RemoveHook(WindowMessage); source = null; }
             reader.Changed -= OnReaderChanged; charger.Changed -= OnReaderChanged;
-            tray.Visible = false; tray.Dispose(); trayMenu.Dispose(); if (trayIcon != null) trayIcon.Dispose();
+            if (tray != null) { tray.Visible = false; tray.Dispose(); } if (trayMenu != null) trayMenu.Dispose(); if (trayIcon != null) trayIcon.Dispose();
             reader.Dispose(); charger.Dispose(); base.OnClosed(e);
             if (System.Windows.Application.Current != null) System.Windows.Application.Current.Shutdown();
         }

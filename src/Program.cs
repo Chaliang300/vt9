@@ -24,6 +24,7 @@ namespace VT9Status
             try
             {
                 Directory.CreateDirectory(DataDir);
+                Mark("进程启动、数据目录就绪");
                 if (Array.IndexOf(args, "--self-test") >= 0) { SelfTest(); return; }
                 if (Array.IndexOf(args, "--tray-icon-preview") >= 0) { IconArtwork.TrayPreview(Path.Combine(DataDir, "tray-gauge-preview.png")); return; }
                 if (Array.IndexOf(args, "--dpi-read-test") >= 0)
@@ -118,6 +119,14 @@ namespace VT9Status
             }
         }
 
+        // 启动计时：首次启动的卡顿到底是哪一段，靠日志里的 +xx ms 判断，不靠感觉。
+        internal static readonly Stopwatch Boot = Stopwatch.StartNew();
+
+        internal static void Mark(string label)
+        {
+            Log("启动：+" + Boot.ElapsedMilliseconds + "ms " + label);
+        }
+
         internal static void Log(string text)
         {
             try
@@ -157,9 +166,11 @@ namespace VT9Status
                 e.Handled = true;
             };
             MainForm window = new MainForm(Array.IndexOf(args, "--tray") >= 0);
+            Mark("窗口构造完成");
             app.MainWindow = window;
             app.SessionEnding += delegate { window.ShutdownForSession(); };
             if (Array.IndexOf(args, "--tray") < 0) window.Show();
+            Mark("窗口已显示（等待首帧）");
             app.Run();
         }
 

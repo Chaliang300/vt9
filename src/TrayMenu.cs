@@ -96,6 +96,7 @@ namespace VT9Status
         // 以前是 ContextMenuStrip.Show(Cursor.Position)，等于用鼠标点当菜单左上角，菜单会往右下角甩。
         internal void ShowTrayMenu()
         {
+            if (trayMenu == null) return;   // 托盘菜单在首帧之后才构建，极端情况下可能还没建好
             UpdateTrayMenu();   // 先把摘要文字算好，PreferredSize 才是最终尺寸
             Size size = trayMenu.GetPreferredSize(Size.Empty);
             Rectangle icon;
@@ -119,6 +120,7 @@ namespace VT9Status
         // 截图时勾选态强制打开，否则“登录时自动启动”未勾选时看不到复选标记的绘制效果。
         internal void PreviewTrayMenu(string path)
         {
+            if (trayMenu == null) BuildTrayMenu();   // 预览路径不走首帧延迟构建
             bool restore = autoStartOn;
             autoStartOn = true;
             UpdateTrayMenu();
