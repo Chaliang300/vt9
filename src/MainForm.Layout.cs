@@ -448,21 +448,33 @@ namespace VT9Status
             PlaceIn(surface, drag, 0, 0, 1018, 66);
             drag.MouseLeftButtonDown += delegate { DragMove(); };
 
-            // 标题「雷柏 VT9 控制台」: 左 32, 行中心 34, 20px SemiBold #111827
+            // 顶栏统一基准：内容垂直中线 = 栏高一半（66/2 = 33），右边界 = 996（与所有卡片的
+            // 右边界同一条线）。以前标题中线在 34、右侧那一组在 43，右边界停在 901，
+            // 视觉上右侧整组偏低且没和卡片对齐。
+            const double ChromeMid = 33;
+            const double ChromeRight = 996;
+
+            // 标题「雷柏 VT9 控制台」: 左 32, 中线 33, 20px Bold #111827
             // 标题下方的连接状态行（“接口已连接（2.4G 接收器）”）已移除：连接方式在概况页
             // 与设备卡里都有，顶栏只留标题，视觉更干净。deviceLine 本身仍参与状态判定与摘要。
-            TextBlock title = Label(surface, "雷柏 VT9 控制台", Fonts.Title, 32, 20, 320, 28);
+            TextBlock title = Label(surface, "雷柏 VT9 控制台", Fonts.Title, 32, ChromeMid - 14, 320, 28);
             title.FontWeight = FontWeights.Bold;
             title.Foreground = Theme.Brush(Theme.Ink);
             title.IsHitTestVisible = false;
 
-            // 「读取于 09:36:41」: 右对齐 838, 行中心 38, 13.5px Regular #64748B
-            globalReadTimeText = Label(surface, "尚未读取", Fonts.Sub, 495, 34.5, 240, 19);
+            // 右侧一组的排布顺序由右往左：关闭(36) → 8 → 读取配置(94) → 12 → 读取时间(240 右对齐)
+            const double CloseSize = 36, ReadWidth = 94, ReadHeight = 34, TimeWidth = 240;
+            double closeX = ChromeRight - CloseSize;
+            double readX = closeX - 8 - ReadWidth;
+            double timeX = readX - 12 - TimeWidth;
+
+            // 「读取于 17:55:51」: 右对齐到读取按钮左侧 12px, 13.5px Regular #64748B
+            globalReadTimeText = Label(surface, "尚未读取", Fonts.Sub, timeX, ChromeMid - 9.5, TimeWidth, 19);
             globalReadTimeText.TextAlignment = TextAlignment.Right;
             globalReadTimeText.Foreground = Theme.Brush(Theme.Muted);
             globalReadTimeText.IsHitTestVisible = false;
 
-            // 读取配置按钮: (750, 26, 94, 34) r17, 底 #EDF2F7, 字 13.5px SemiBold #475569
+            // 读取配置按钮: (858, 16, 94, 34) r17, 底 #EDF2F7, 字 13.5px SemiBold #475569
             globalReadBtn = new Button
             {
                 Style = readStyle, Width = 94, Height = 34,
@@ -479,7 +491,7 @@ namespace VT9Status
             globalReadBtn.Content = globalReadBtnText;
             AttachPillFeedback(globalReadBtn, 0.95, Theme.ChipHover, Theme.ChipBg);
             globalReadBtn.Click += delegate { RunReadConfig(); };
-            PlaceIn(surface, globalReadBtn, 750, 26, 94, 34);
+            PlaceIn(surface, globalReadBtn, readX, ChromeMid - ReadHeight / 2, ReadWidth, ReadHeight);
 
             // 关闭按钮: (865, 25, 36, 36) r10, 底透明, X 图标 16px, stroke 2, #475569
             Button close = new Button
@@ -513,7 +525,7 @@ namespace VT9Status
             // 托盘不可用时（例如进程被限制、Shell_NotifyIcon 被拒）就真的退出。
             // 直接调 HideToTray() 会让“托盘注册失败”这种情形下窗口既关不掉、也收不进托盘，成为死路。
             close.Click += delegate { Close(); };
-            PlaceIn(surface, close, 865, 25, 36, 36);
+            PlaceIn(surface, close, closeX, ChromeMid - CloseSize / 2, CloseSize, CloseSize);
 
 
         }
