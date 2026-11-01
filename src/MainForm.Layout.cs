@@ -260,7 +260,11 @@ namespace VT9Status
                 btn.MouseEnter += delegate
                 {
                     SolidColorBrush scb = btn.Background as SolidColorBrush;
-                    if (scb != null && !scb.IsFrozen) Transition.AnimateColorTo(scb, Theme.Media(hoverColor.Value), 120);
+                    if (scb == null || scb.IsFrozen) return;
+                    // 选中态本身就是强调色实底，悬停再压一层灰会被读成“被取消选中”；
+                    // 所以只对未选中的 pill 做 hover 变色，选中的保持蓝色不动（按下仍有缩放反馈）。
+                    if (btn.Tag is Color && (Color)btn.Tag == Theme.Media(Theme.Accent)) return;
+                    Transition.AnimateColorTo(scb, Theme.Media(hoverColor.Value), 120);
                 };
             }
         }
