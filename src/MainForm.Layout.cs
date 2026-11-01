@@ -1072,23 +1072,30 @@ namespace VT9Status
             return chips;
         }
 
+        // 统一的“选中 / 未选中”底色设置：把静止色写进 Tag，悬停反馈离开时按它回位。
+        // 之前这段逻辑在 SyncChips / SyncTab / DPI 快捷切换三处各写一遍，DPI 那处漏写了 Tag，
+        // 于是快捷档位被鼠标划过就掉色。凡是给 pill 上色的地方都必须走这里。
+        private static void SetPillBackground(Button pill, bool on)
+        {
+            System.Drawing.Color pick = on ? Theme.Accent : Theme.ChipBg;
+            Color resting = Theme.Media(pick);
+            pill.Tag = resting;
+            SolidColorBrush bg = pill.Background as SolidColorBrush;
+            if (bg == null || bg.IsFrozen)
+            {
+                pill.Background = Theme.NewBrush(pick);
+            }
+            else
+            {
+                Transition.AnimateColorTo(bg, resting, 180);
+            }
+        }
+
         private void SyncTab(Button tab, bool selected, string caption)
         {
             if (tab == null) return;
             tab.Content = caption;
-            System.Drawing.Color pickTab = selected ? Theme.Accent : Theme.ChipBg;
-            Color restingTab = Theme.Media(pickTab);
-            tab.Tag = restingTab;
-            SolidColorBrush bg = tab.Background as SolidColorBrush;
-            if (bg == null || bg.IsFrozen)
-            {
-                bg = Theme.NewBrush(pickTab);
-                tab.Background = bg;
-            }
-            else
-            {
-                Transition.AnimateColorTo(bg, restingTab, 180);
-            }
+            SetPillBackground(tab, selected);
 
             SolidColorBrush fg = tab.Foreground as SolidColorBrush;
             if (fg == null || fg.IsFrozen)
@@ -1113,21 +1120,7 @@ namespace VT9Status
                 Button chip = chips[i];
                 if (chip == null) continue;
                 bool on = i == selected;
-                // 静止色同时写进 Tag，悬停反馈离开时按它回位（见 AttachPillFeedback）。
-                System.Drawing.Color pick = on ? Theme.Accent : Theme.ChipBg;
-                Color resting = Theme.Media(pick);
-                chip.Tag = resting;
-                SolidColorBrush bg = chip.Background as SolidColorBrush;
-                if (bg == null || bg.IsFrozen)
-                {
-                    bg = Theme.NewBrush(pick);
-                    chip.Background = bg;
-                }
-                else
-                {
-                    // 180ms 交叉过渡：选中态不再"一帧换色"（原则 3）
-                    Transition.AnimateColorTo(bg, resting, 180);
-                }
+                SetPillBackground(chip, on);
 
                 SolidColorBrush fg = chip.Foreground as SolidColorBrush;
                 if (fg == null || fg.IsFrozen)
@@ -1381,16 +1374,8 @@ namespace VT9Status
                         bool active = has && i == draftActive;
                         chip.Content = has ? draftValues[i].ToString() : "—";
                         chip.IsEnabled = enabled && !configBusy;
-                        SolidColorBrush bg = chip.Background as SolidColorBrush;
-                        if (bg == null || bg.IsFrozen)
-                        {
-                            bg = Theme.NewBrush(active ? Theme.Accent : Theme.ChipBg);
-                            chip.Background = bg;
-                        }
-                        else
-                        {
-                            Transition.AnimateColorTo(bg, Theme.Media(active ? Theme.Accent : Theme.ChipBg), 180);
-                        }
+                        // 走统一入口，静止色会写进 Tag，悬停/离开之后不会掉色。
+                        SetPillBackground(chip, active);
                         SolidColorBrush fg = chip.Foreground as SolidColorBrush;
                         if (fg == null || fg.IsFrozen)
                         {
