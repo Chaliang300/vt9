@@ -91,6 +91,28 @@ namespace VT9Status
             ShapeTrayMenu();
         }
 
+        // 右键菜单以“图标左下角”为锚点向上展开：菜单底边贴住图标上沿、左边缘与图标左边缘对齐，
+        // 再整体夹进工作区（任务栏在底部时就是贴着任务栏上沿）。拿不到图标矩形时退回鼠标位置。
+        // 以前是 ContextMenuStrip.Show(Cursor.Position)，等于用鼠标点当菜单左上角，菜单会往右下角甩。
+        internal void ShowTrayMenu()
+        {
+            UpdateTrayMenu();   // 先把摘要文字算好，PreferredSize 才是最终尺寸
+            Size size = trayMenu.GetPreferredSize(Size.Empty);
+            Rectangle icon;
+            Point anchor;
+            if (TryTrayRect(out icon)) anchor = new Point(icon.Left, icon.Top);
+            else anchor = System.Windows.Forms.Cursor.Position;
+
+            Rectangle area = Screen.FromPoint(anchor).WorkingArea;
+            int x = anchor.X;
+            int y = anchor.Y - size.Height;
+            if (x + size.Width > area.Right) x = area.Right - size.Width;
+            if (x < area.Left) x = area.Left;
+            if (y + size.Height > area.Bottom) y = area.Bottom - size.Height;
+            if (y < area.Top) y = area.Top;
+            trayMenu.Show(new Point(x, y));
+        }
+
         // 诊断用：把真实托盘菜单显示出来并截图，避免只能靠人工点右键确认配色。
         // 截图时勾选态强制打开，否则“登录时自动启动”未勾选时看不到复选标记的绘制效果。
         internal void PreviewTrayMenu(string path)

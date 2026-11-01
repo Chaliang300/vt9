@@ -20,6 +20,8 @@ namespace VT9Status
         private bool visible, disposed, registered, failureLogged;
         internal Forms.ContextMenuStrip ContextMenuStrip { get; set; }
         internal event EventHandler Click;
+        // 右键：由窗口按托盘图标矩形定位后自己弹菜单，这里只负责把前台抢回来（否则点外面收不掉）。
+        internal event EventHandler MenuRequested;
         internal bool IsRegistered { get { return registered; } }
         internal NativeTrayIcon()
         {
@@ -110,10 +112,11 @@ namespace VT9Status
             {
                 int action = lparam.ToInt32() & 0xffff;
                 if (action == 0x202 && Click != null) Click(this, EventArgs.Empty);
-                if (action == 0x205 && ContextMenuStrip != null)
+                if (action == 0x205)
                 {
                     SetForegroundWindow(owner.Handle);
-                    ContextMenuStrip.Show(Forms.Cursor.Position);
+                    if (MenuRequested != null) MenuRequested(this, EventArgs.Empty);
+                    else if (ContextMenuStrip != null) ContextMenuStrip.Show(Forms.Cursor.Position);
                 }
                 handled = true;
             }

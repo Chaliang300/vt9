@@ -59,6 +59,7 @@ namespace VT9Status
             taskbarLight = IconArtwork.LightTaskbar();
             tray = new NativeTrayIcon { Text = "VT9 · 等待设备报告", ContextMenuStrip = trayMenu, Visible = true };
             tray.Click += delegate { ShowPanel(); };
+            tray.MenuRequested += delegate { ShowTrayMenu(); };
             reader = new HidReader(Program.Log); charger = new ChargeMonitor();
             reader.Changed += OnReaderChanged; charger.Changed += OnReaderChanged;
             clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
