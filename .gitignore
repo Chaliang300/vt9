@@ -1,0 +1,16 @@
+# 构建与发布产物
+/VT9Status.exe
+/bin/
+/dist/
+/artifacts/
+/backup/
+/experiments/
+
+# 运行数据：日志、截图、读数 JSON
+/data/
+
+# 工具与编辑器
+/.workbuddy/
+/.dsh-acl
+*.user
+*~

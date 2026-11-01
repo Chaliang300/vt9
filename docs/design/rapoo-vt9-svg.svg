@@ -1,0 +1,1273 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 660" width="100%" height="100%" id="rapoo-vt9-svg">
+  <defs>
+    <!-- 全局亚克力背景渐变 -->
+    <linearGradient id="win-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#edf1f6" />
+      <stop offset="50%" stop-color="#e3e8f0" />
+      <stop offset="100%" stop-color="#d9dfe8" />
+    </linearGradient>
+
+    <!-- 纵向玻璃 Dock 底座渐变 -->
+    <linearGradient id="glass-dock-fill" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.50" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.75" />
+    </linearGradient>
+    <linearGradient id="glass-dock-stroke" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- 紫蓝色液态滑块 -->
+    <linearGradient id="slider-capsule-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cfd8f9" stop-opacity="0.90" />
+      <stop offset="100%" stop-color="#bbc8f5" stop-opacity="0.80" />
+    </linearGradient>
+    <linearGradient id="slider-capsule-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#9eb1f2" />
+    </linearGradient>
+
+    <!-- 阴影系统 -->
+    <filter id="dock-shadow" x="-30%" y="-10%" width="160%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#7e8da3" flood-opacity="0.18" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#4f5e74" flood-opacity="0.08" />
+    </filter>
+
+    <filter id="slider-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#3c52a3" flood-opacity="0.22" />
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#2d3b76" flood-opacity="0.12" />
+    </filter>
+
+    <filter id="card-soft-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#5a687d" flood-opacity="0.06" />
+      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#5a687d" flood-opacity="0.04" />
+    </filter>
+
+    <!-- Dock 透镜裁剪路径 -->
+    <clipPath id="dock-lens-clip">
+      <rect id="clip-rect" x="30" y="85" width="80" height="76" rx="20" />
+    </clipPath>
+    <mask id="dock-base-mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="-20" y="0" width="200" height="660" style="mask-type:luminance">
+      <rect x="-20" y="0" width="200" height="660" fill="white" />
+      <rect id="base-mask-rect" x="30" y="85" width="80" height="76" rx="20" fill="black" />
+    </mask>
+  </defs>
+
+  <style>
+    svg {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    text {
+      pointer-events: none;
+    }
+
+    /* Dock 标签文字 */
+    .dock-base-text {
+      font-size: 18px;
+      font-weight: 500;
+      fill: #4b525d;
+      letter-spacing: 0.5px;
+      dominant-baseline: central;
+      text-anchor: middle;
+    }
+    .dock-magnified-text {
+      transform-box: fill-box;
+      transform-origin: center;
+      transform: scale(1.2);
+      font-size: 18px;
+      font-weight: 700;
+      fill: #22379b;
+      letter-spacing: 0.5px;
+      dominant-baseline: central;
+      text-anchor: middle;
+    }
+
+    #glass-slider, #clip-rect, #base-mask-rect {
+      will-change: transform;
+    }
+
+    .dash-card {
+      will-change: translate, opacity;
+      transition: opacity 0.28s ease-out;
+    }
+
+    /* =========================================================
+       标准模型 1：统一开关模型
+       ========================================================= */
+    .switch-group {
+      cursor: pointer;
+    }
+    .switch-track {
+      transition: fill 0.2s ease-out;
+    }
+    .switch-knob {
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* =========================================================
+       标准模型 2：统一 Pill 点击选项框（外层定点，内层 scale）
+       ========================================================= */
+    .pill-btn {
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.15s ease;
+      transform-box: fill-box;
+      transform-origin: center center;
+    }
+    .pill-btn:hover {
+      filter: brightness(0.97);
+    }
+    .pill-btn:active {
+      transform: scale(0.95);
+    }
+    .pill-rect {
+      transition: fill 0.18s ease, stroke 0.18s ease;
+    }
+    .pill-text {
+      transition: fill 0.18s ease;
+      dominant-baseline: central;
+      text-anchor: middle;
+    }
+
+    .step-btn {
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.15s ease;
+      transform-box: fill-box;
+      transform-origin: center center;
+    }
+    .step-btn:hover {
+      filter: brightness(0.95);
+    }
+    .step-btn:active {
+      transform: scale(0.92);
+    }
+
+    .dpi-slider-wrap {
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    /* =========================================================
+       卡片右侧滑入与归位统一动效
+       ========================================================= */
+    @keyframes cardSlideIn {
+      0%   { translate: 72px 0; opacity: 0; }
+      100% { translate: 0 0;    opacity: 1; }
+    }
+
+    .page-container .dash-card {
+      translate: 0 0;
+      opacity: 1;
+    }
+
+    .page-container.play-in .dash-card {
+      animation: cardSlideIn 0.42s cubic-bezier(0.22, 0.9, 0.32, 1) both;
+    }
+  </style>
+
+  <!-- 窗口亚克力外壳背景 -->
+  <rect width="1020" height="660" rx="24" fill="url(#win-bg-grad)" />
+
+  <!-- ==================== 顶部标题栏 Window Header ==================== -->
+  <g id="window-header">
+    <text x="32" y="38" style="font-size: 20px; font-weight: 700; fill: #111827;">雷柏 VT9 控制台</text>
+    <text x="32" y="58" style="font-size: 13px; fill: #64748b;">正在接收设备状态</text>
+
+    <text x="735" y="44" style="font-size: 13.5px; fill: #64748b; text-anchor: end; dominant-baseline: central;">读取于 09:36:41</text>
+
+    <!-- 读取配置按钮 (双层嵌套隔离: 外层定位, 内层动画) -->
+    <g transform="translate(750, 26)">
+      <g class="pill-btn" id="btn-read-config">
+        <rect class="pill-rect" width="94" height="34" rx="17" fill="#edf2f7" />
+        <text class="pill-text" x="47" y="17" style="font-size: 13.5px; font-weight: 600; fill: #475569;">读取配置</text>
+      </g>
+    </g>
+
+    <!-- 关闭按钮 X (双层嵌套隔离) -->
+    <g transform="translate(865, 25)">
+      <g id="btn-win-close" class="pill-btn">
+        <rect width="36" height="36" rx="10" fill="transparent" />
+        <path d="M 11 11 L 25 25 M 25 11 L 11 25" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+      </g>
+    </g>
+  </g>
+
+  <!-- ==================== 左侧：纵向 DOCK 栏 ==================== -->
+  <g id="left-dock" transform="translate(14, 0)" style="touch-action: none;">
+    <!-- 玻璃底座 (统一圆角 rx=20) -->
+    <g filter="url(#dock-shadow)">
+      <rect x="20" y="76" width="100" height="506" rx="20" fill="url(#glass-dock-fill)" stroke="url(#glass-dock-stroke)" stroke-width="1.2" />
+    </g>
+
+    <!-- 基础底层文字 -->
+    <g id="dock-base-labels" mask="url(#dock-base-mask)">
+      <text x="70" y="123" class="dock-base-text">概况</text>
+      <text x="70" y="227" class="dock-base-text">DPI</text>
+      <text x="70" y="331" class="dock-base-text">参数</text>
+      <text x="70" y="435" class="dock-base-text">设置</text>
+    </g>
+
+    <!-- 紫色液态玻璃胶囊滑块 (统一圆角 rx=20) -->
+    <g id="glass-slider" filter="url(#slider-shadow)">
+      <rect x="30" y="85" width="80" height="76" rx="20" fill="url(#slider-capsule-fill)" stroke="url(#slider-capsule-stroke)" stroke-width="1.2" />
+      <path d="M 45 86.5 L 95 86.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.9" />
+    </g>
+
+    <!-- 局部透镜放大文字 -->
+    <g clip-path="url(#dock-lens-clip)">
+      <text x="70" y="123" class="dock-magnified-text">概况</text>
+      <text x="70" y="227" class="dock-magnified-text">DPI</text>
+      <text x="70" y="331" class="dock-magnified-text">参数</text>
+      <text x="70" y="435" class="dock-magnified-text">设置</text>
+    </g>
+
+    <!-- 点击感应槽 -->
+    <g id="tab-hit-0" class="tab-hit" style="cursor: pointer;"><rect x="20" y="76" width="100" height="100" fill="transparent" /></g>
+    <g id="tab-hit-1" class="tab-hit" style="cursor: pointer;"><rect x="20" y="180" width="100" height="100" fill="transparent" /></g>
+    <g id="tab-hit-2" class="tab-hit" style="cursor: pointer;"><rect x="20" y="284" width="100" height="100" fill="transparent" /></g>
+    <g id="tab-hit-3" class="tab-hit" style="cursor: pointer;"><rect x="20" y="388" width="100" height="100" fill="transparent" /></g>
+  </g>
+
+  <!-- ==================== 右侧页面容器视图 ==================== -->
+
+  <!-- ======================== PAGE 0: 概况 (OVERVIEW) ======================== -->
+  <g id="page-0" class="page-container" style="display: inline;">
+    <!-- 1. 左上：设备卡片 -->
+    <g id="card-p0-1" class="dash-card" transform="translate(150, 76)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="360" height="344" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">设备</text>
+      <text x="336" y="34" style="font-size: 13.5px; fill: #8a94a6; text-anchor: end;">2.4G 无线</text>
+
+      <rect x="24" y="52" width="312" height="175" rx="14" fill="#eef2fb" />
+      <g transform="translate(150, 72)">
+        <rect x="0" y="0" width="60" height="100" rx="28" fill="#304ffe" />
+        <line x1="30" y1="0" x2="30" y2="45" stroke="#ffffff" stroke-width="1.8" stroke-opacity="0.85" />
+        <rect x="27.5" y="18" width="5" height="18" rx="2.5" fill="#ffffff" />
+      </g>
+
+      <text x="24" y="254" style="font-size: 14.5px; fill: #64748b;">电量</text>
+      <text x="336" y="254" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">100%</text>
+
+      <text x="24" y="286" style="font-size: 14.5px; fill: #64748b;">充电状态</text>
+      <text x="336" y="286" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">未充电</text>
+
+      <text x="24" y="318" style="font-size: 14.5px; fill: #64748b;">连接模式</text>
+      <text x="336" y="318" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">已连接 • 2.4G</text>
+    </g>
+
+    <!-- 2. 右上：参数摘要卡片 -->
+    <g id="card-p0-2" class="dash-card" transform="translate(526, 76)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="470" height="344" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">参数</text>
+
+      <text x="24" y="80" style="font-size: 14.5px; fill: #64748b;">回报率</text>
+      <text id="sum-poll" x="446" y="80" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">1000 Hz</text>
+
+      <text x="24" y="126" style="font-size: 14.5px; fill: #64748b;">静默高度</text>
+      <text id="sum-lod" x="446" y="126" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">3 mm</text>
+
+      <text x="24" y="172" style="font-size: 14.5px; fill: #64748b;">进入休眠</text>
+      <text id="sum-sleep" x="446" y="172" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">30 分钟</text>
+
+      <text x="24" y="218" style="font-size: 14.5px; fill: #64748b;">按键消抖</text>
+      <text id="sum-debounce" x="446" y="218" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">8 ms · 按下</text>
+
+      <text x="24" y="264" style="font-size: 14.5px; fill: #64748b;">运动同步</text>
+      <text id="sum-motion" x="446" y="264" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">开</text>
+
+      <text x="24" y="310" style="font-size: 14.5px; fill: #64748b;">当前档位</text>
+      <text id="sum-dpi" x="446" y="310" style="font-size: 15px; font-weight: 700; fill: #111827; text-anchor: end;">第 3 档 • 1600 DPI</text>
+    </g>
+
+    <!-- 3. 下方：启动与提醒卡片 -->
+    <g id="card-p0-3" class="dash-card" transform="translate(150, 436)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="146" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">启动与提醒</text>
+
+      <!-- 开关 1: 自动启动 -->
+      <g id="sw-auto-start" class="switch-group" transform="translate(24, 52)">
+        <rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" />
+        <circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" />
+      </g>
+      <text x="82" y="66" style="font-size: 15px; font-weight: 600; fill: #111827; dominant-baseline: central;">自动启动</text>
+      <text x="160" y="66" style="font-size: 13.5px; fill: #64748b; dominant-baseline: central;">开机自动启动服务并收起至托盘</text>
+      <text id="txt-auto-start-status" x="820" y="66" style="font-size: 14.5px; font-weight: 600; fill: #8a94a6; text-anchor: end; dominant-baseline: central;">未启用</text>
+
+      <!-- 开关 2: 低电量提醒 -->
+      <g id="sw-low-batt" class="switch-group" transform="translate(24, 98)">
+        <rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" />
+        <circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" />
+      </g>
+      <text x="82" y="112" style="font-size: 15px; font-weight: 600; fill: #111827; dominant-baseline: central;">低电量提醒</text>
+      <text x="160" y="112" style="font-size: 13.5px; fill: #64748b; dominant-baseline: central;">鼠标电池电量低于 20% 时弹出通知气泡预警</text>
+      <text id="txt-low-batt-status" x="820" y="112" style="font-size: 14.5px; font-weight: 600; fill: #111827; text-anchor: end; dominant-baseline: central;">已开启 • 阈值 20%</text>
+    </g>
+  </g>
+
+  <!-- ======================== PAGE 1: DPI 页面 ======================== -->
+  <g id="page-1" class="page-container" style="display: none;">
+    <!-- 顶部大档位与快捷切换卡片 -->
+    <g id="card-p1-1" class="dash-card" transform="translate(150, 76)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="106" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="30" style="font-size: 14px; font-weight: 600; fill: #1e293b;">当前档位</text>
+      <text id="dpi-hero-val" x="24" y="74" style="font-size: 40px; font-weight: 800; fill: #111827;">1600</text>
+      <text x="822" y="30" style="font-size: 13.5px; fill: #64748b; text-anchor: end;">共 5 档 · 800 – 3200</text>
+
+      <text x="440" y="68" style="font-size: 14px; fill: #64748b; text-anchor: end; dominant-baseline: central;">快捷切换</text>
+
+      <!-- DPI 快捷切换档位 Pills (双层嵌套隔离) -->
+      <g transform="translate(450, 52)">
+        <g transform="translate(0, 0)">
+          <g id="dpi-pill-800" class="pill-btn">
+            <rect class="pill-rect" width="46" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="23" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">800</text>
+          </g>
+        </g>
+        <g transform="translate(52, 0)">
+          <g id="dpi-pill-1200" class="pill-btn">
+            <rect class="pill-rect" width="50" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="25" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">1200</text>
+          </g>
+        </g>
+        <g transform="translate(108, 0)">
+          <g id="dpi-pill-1600" class="pill-btn">
+            <rect class="pill-rect" width="52" height="32" rx="10" fill="#304ffe" />
+            <text class="pill-text" x="26" y="16" style="font-size: 13px; font-weight: 700; fill: #ffffff;">1600</text>
+          </g>
+        </g>
+        <g transform="translate(166, 0)">
+          <g id="dpi-pill-2000" class="pill-btn">
+            <rect class="pill-rect" width="52" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="26" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">2000</text>
+          </g>
+        </g>
+        <g transform="translate(224, 0)">
+          <g id="dpi-pill-3200" class="pill-btn">
+            <rect class="pill-rect" width="52" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="26" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">3200</text>
+          </g>
+        </g>
+        <g transform="translate(282, 0)">
+          <g id="dpi-pill-6400" class="pill-btn">
+            <rect class="pill-rect" width="54" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="27" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">6400</text>
+          </g>
+        </g>
+        <g transform="translate(342, 0)">
+          <g id="dpi-pill-20000" class="pill-btn">
+            <rect class="pill-rect" width="56" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="28" y="16" style="font-size: 12.5px; font-weight: 600; fill: #475569;">20000</text>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- 7 档调节主卡片 -->
+    <g id="card-p1-2" class="dash-card" transform="translate(150, 194)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="388" rx="20" fill="#ffffff" />
+      </g>
+
+      <!-- 7 档开关与滑动调节行 -->
+      <g id="dpi-rows-group" transform="translate(24, 18)">
+        <!-- 档位 1: 800 -->
+        <g id="dpi-row-0" transform="translate(0, 0)">
+          <g class="switch-group" id="sw-dpi-0"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 600; fill: #334155; dominant-baseline: central;">1</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-0" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-0" x1="0" y1="2" x2="48" y2="2" stroke="#304ffe" stroke-width="4" stroke-linecap="round" /><circle id="thumb-0" cx="48" cy="2" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" /></g>
+          <text id="txt-val-0" x="650" y="13" style="font-size: 15px; font-weight: 600; fill: #111827; text-anchor: end; dominant-baseline: central;">800</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-0"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-0"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+
+        <!-- 档位 2: 1200 -->
+        <g id="dpi-row-1" transform="translate(0, 44)">
+          <g class="switch-group" id="sw-dpi-1"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 600; fill: #334155; dominant-baseline: central;">2</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-1" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-1" x1="0" y1="2" x2="72" y2="2" stroke="#304ffe" stroke-width="4" stroke-linecap="round" /><circle id="thumb-1" cx="72" cy="2" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" /></g>
+          <text id="txt-val-1" x="650" y="13" style="font-size: 15px; font-weight: 600; fill: #111827; text-anchor: end; dominant-baseline: central;">1200</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-1"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-1"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+
+        <!-- 档位 3: 1600 -->
+        <g id="dpi-row-2" transform="translate(0, 88)">
+          <g class="switch-group" id="sw-dpi-2"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 700; fill: #304ffe; dominant-baseline: central;">3</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-2" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-2" x1="0" y1="2" x2="96" y2="2" stroke="#304ffe" stroke-width="4" stroke-linecap="round" /><circle id="thumb-2" cx="96" cy="2" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" /></g>
+          <text id="txt-val-2" x="650" y="13" style="font-size: 15.5px; font-weight: 700; fill: #111827; text-anchor: end; dominant-baseline: central;">1600</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-2"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-2"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+
+        <!-- 档位 4: 2000 -->
+        <g id="dpi-row-3" transform="translate(0, 132)">
+          <g class="switch-group" id="sw-dpi-3"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 600; fill: #334155; dominant-baseline: central;">4</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-3" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-3" x1="0" y1="2" x2="120" y2="2" stroke="#304ffe" stroke-width="4" stroke-linecap="round" /><circle id="thumb-3" cx="120" cy="2" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" /></g>
+          <text id="txt-val-3" x="650" y="13" style="font-size: 15px; font-weight: 600; fill: #111827; text-anchor: end; dominant-baseline: central;">2000</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-3"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-3"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+
+        <!-- 档位 5: 3200 -->
+        <g id="dpi-row-4" transform="translate(0, 176)">
+          <g class="switch-group" id="sw-dpi-4"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 600; fill: #334155; dominant-baseline: central;">5</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-4" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-4" x1="0" y1="2" x2="192" y2="2" stroke="#304ffe" stroke-width="4" stroke-linecap="round" /><circle id="thumb-4" cx="192" cy="2" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" /></g>
+          <text id="txt-val-4" x="650" y="13" style="font-size: 15px; font-weight: 600; fill: #111827; text-anchor: end; dominant-baseline: central;">3200</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-4"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-4"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #475569; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+
+        <!-- 档位 6: 未启用 -->
+        <g id="dpi-row-5" transform="translate(0, 220)">
+          <g class="switch-group" id="sw-dpi-5"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 600; fill: #94a3b8; dominant-baseline: central;">6</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-5" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-5" x1="0" y1="2" x2="280" y2="2" stroke="#a5b4fc" stroke-width="4" stroke-linecap="round" /><circle id="thumb-5" cx="280" cy="2" r="7.5" fill="#ffffff" stroke="#a5b4fc" stroke-width="3" /></g>
+          <text id="txt-val-5" x="650" y="13" style="font-size: 15px; font-weight: 600; fill: #94a3b8; text-anchor: end; dominant-baseline: central;">未启用</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-5"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #94a3b8; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-5"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #94a3b8; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+
+        <!-- 档位 7: 未启用 -->
+        <g id="dpi-row-6" transform="translate(0, 264)">
+          <g class="switch-group" id="sw-dpi-6"><rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" /><circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" /></g>
+          <text x="68" y="13" style="font-size: 15px; font-weight: 600; fill: #94a3b8; dominant-baseline: central;">7</text>
+          <g class="dpi-slider-wrap" id="slider-wrap-6" transform="translate(94, 11)"><line x1="0" y1="2" x2="480" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" /><line id="fill-line-6" x1="0" y1="2" x2="420" y2="2" stroke="#a5b4fc" stroke-width="4" stroke-linecap="round" /><circle id="thumb-6" cx="420" cy="2" r="7.5" fill="#ffffff" stroke="#a5b4fc" stroke-width="3" /></g>
+          <text id="txt-val-6" x="650" y="13" style="font-size: 15px; font-weight: 600; fill: #94a3b8; text-anchor: end; dominant-baseline: central;">未启用</text>
+          <g transform="translate(668, 0)"><g class="step-btn" id="btn-minus-6"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #94a3b8; dominant-baseline: central; text-anchor: middle;">−</text></g></g>
+          <g transform="translate(704, 0)"><g class="step-btn" id="btn-plus-6"><rect width="30" height="26" rx="8" fill="#edf2f7" /><text x="15" y="13" style="font-size: 16px; font-weight: bold; fill: #94a3b8; dominant-baseline: central; text-anchor: middle;">+</text></g></g>
+        </g>
+      </g>
+
+      <!-- 底部操作按钮 (双层嵌套隔离) -->
+      <g transform="translate(24, 328)">
+        <g transform="translate(0, 0)">
+          <g id="btn-apply-dpi" class="pill-btn">
+            <rect class="pill-rect" width="180" height="40" rx="12" fill="#304ffe" />
+            <text class="pill-text" x="90" y="20" style="font-size: 14.5px; font-weight: 600; fill: #ffffff;">应用到设备</text>
+          </g>
+        </g>
+        <g transform="translate(196, 0)">
+          <g id="btn-restore-dpi" class="pill-btn">
+            <rect class="pill-rect" width="180" height="40" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="90" y="20" style="font-size: 14.5px; font-weight: 600; fill: #475569;">恢复设备值</text>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ======================== PAGE 2: 参数 (PARAMETERS) ======================== -->
+  <g id="page-2" class="page-container" style="display: none;">
+    <!-- 1. 回报率卡片 -->
+    <g id="card-p2-1" class="dash-card" transform="translate(150, 76)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="112" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">回报率</text>
+      <!-- 回报率 Pills (双层嵌套隔离) -->
+      <g transform="translate(24, 54)">
+        <g transform="translate(0, 0)">
+          <g id="poll-pill-125" class="pill-btn">
+            <rect class="pill-rect" width="86" height="38" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="43" y="19" style="font-size: 14px; font-weight: 600; fill: #475569;">125 Hz</text>
+          </g>
+        </g>
+        <g transform="translate(98, 0)">
+          <g id="poll-pill-250" class="pill-btn">
+            <rect class="pill-rect" width="86" height="38" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="43" y="19" style="font-size: 14px; font-weight: 600; fill: #475569;">250 Hz</text>
+          </g>
+        </g>
+        <g transform="translate(196, 0)">
+          <g id="poll-pill-500" class="pill-btn">
+            <rect class="pill-rect" width="86" height="38" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="43" y="19" style="font-size: 14px; font-weight: 600; fill: #475569;">500 Hz</text>
+          </g>
+        </g>
+        <g transform="translate(294, 0)">
+          <g id="poll-pill-1000" class="pill-btn">
+            <rect class="pill-rect" width="94" height="38" rx="12" fill="#304ffe" />
+            <text class="pill-text" x="47" y="19" style="font-size: 14px; font-weight: 700; fill: #ffffff;">1000 Hz</text>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- 2. 静默高度卡片 -->
+    <g id="card-p2-2" class="dash-card" transform="translate(150, 200)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="112" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">静默高度</text>
+
+      <!-- 静默高度 Pills (双层嵌套隔离) -->
+      <g transform="translate(24, 54)">
+        <g transform="translate(0, 0)">
+          <g id="lod-pill-1" class="pill-btn">
+            <rect class="pill-rect" width="86" height="38" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="43" y="19" style="font-size: 14px; font-weight: 600; fill: #475569;">1 mm</text>
+          </g>
+        </g>
+        <g transform="translate(98, 0)">
+          <g id="lod-pill-2" class="pill-btn">
+            <rect class="pill-rect" width="86" height="38" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="43" y="19" style="font-size: 14px; font-weight: 600; fill: #475569;">2 mm</text>
+          </g>
+        </g>
+        <g transform="translate(196, 0)">
+          <g id="lod-pill-3" class="pill-btn">
+            <rect class="pill-rect" width="86" height="38" rx="12" fill="#304ffe" />
+            <text class="pill-text" x="43" y="19" style="font-size: 14px; font-weight: 700; fill: #ffffff;">3 mm</text>
+          </g>
+        </g>
+      </g>
+
+      <!-- 运动同步开关 -->
+      <g id="sw-motion-sync" class="switch-group" transform="translate(685, 60)">
+        <rect class="switch-track" width="48" height="26" rx="13" fill="#cbd5e1" />
+        <circle class="switch-knob" cx="13" cy="13" r="9" fill="#ffffff" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" />
+      </g>
+      <text x="744" y="74" style="font-size: 15px; font-weight: 600; fill: #111827; dominant-baseline: central;">运动同步</text>
+    </g>
+
+    <!-- 3. 进入休眠等待时长卡片 -->
+    <g id="card-p2-3" class="dash-card" transform="translate(150, 324)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="126" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">进入休眠等待时长</text>
+      <text x="560" y="34" style="font-size: 13.5px; fill: #8a94a6;">有线连接时鼠标不休眠</text>
+      <text id="txt-sleep-val" x="822" y="34" style="font-size: 16px; font-weight: 700; fill: #111827; text-anchor: end;">30 分钟</text>
+
+      <g id="sleep-slider-track" class="dpi-slider-wrap" transform="translate(24, 62)">
+        <line x1="0" y1="2" x2="680" y2="2" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" />
+        <line id="sleep-fill-line" x1="0" y1="2" x2="170" y2="2" stroke="#304ffe" stroke-width="4" stroke-linecap="round" />
+        <circle id="sleep-thumb" cx="170" cy="2" r="8" fill="#ffffff" stroke="#304ffe" stroke-width="3.5" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" />
+      </g>
+
+      <!-- 时间档位 Pills (双层嵌套隔离) -->
+      <g transform="translate(24, 78)">
+        <g transform="translate(0, 0)">
+          <g id="sleep-pill-5" class="pill-btn">
+            <rect class="pill-rect" width="60" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="30" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">5</text>
+          </g>
+        </g>
+        <g transform="translate(70, 0)">
+          <g id="sleep-pill-10" class="pill-btn">
+            <rect class="pill-rect" width="60" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="30" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">10</text>
+          </g>
+        </g>
+        <g transform="translate(140, 0)">
+          <g id="sleep-pill-30" class="pill-btn">
+            <rect class="pill-rect" width="66" height="32" rx="10" fill="#304ffe" />
+            <text class="pill-text" x="33" y="16" style="font-size: 13px; font-weight: 700; fill: #ffffff;">30</text>
+          </g>
+        </g>
+        <g transform="translate(216, 0)">
+          <g id="sleep-pill-60" class="pill-btn">
+            <rect class="pill-rect" width="60" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="30" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">60</text>
+          </g>
+        </g>
+        <g transform="translate(286, 0)">
+          <g id="sleep-pill-120" class="pill-btn">
+            <rect class="pill-rect" width="60" height="32" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="30" y="16" style="font-size: 13px; font-weight: 600; fill: #475569;">120</text>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- 4. 按键防抖延迟卡片 -->
+    <g id="card-p2-4" class="dash-card" transform="translate(150, 462)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="120" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="32" style="font-size: 18px; font-weight: 700; fill: #111827;">按键防抖延迟</text>
+
+      <!-- 按下 / 抬起 模式切换 (双层嵌套隔离) -->
+      <g transform="translate(670, 14)">
+        <g transform="translate(0, 0)">
+          <g id="pill-mode-press" class="pill-btn">
+            <rect class="pill-rect" width="70" height="30" rx="10" fill="#304ffe" />
+            <text class="pill-text" x="35" y="15" style="font-size: 13px; font-weight: 700; fill: #ffffff;">按下</text>
+          </g>
+        </g>
+        <g transform="translate(76, 0)">
+          <g id="pill-mode-lift" class="pill-btn">
+            <rect class="pill-rect" width="70" height="30" rx="10" fill="#edf2f7" />
+            <text class="pill-text" x="35" y="15" style="font-size: 13px; font-weight: 600; fill: #475569;">抬起</text>
+          </g>
+        </g>
+      </g>
+
+      <!-- 毫秒档位 Pills (双层嵌套隔离) -->
+      <g transform="translate(24, 56)">
+        <g transform="translate(0, 0)">
+          <g id="db-pill-1" class="pill-btn">
+            <rect class="pill-rect" width="72" height="36" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="36" y="18" style="font-size: 13.5px; font-weight: 600; fill: #475569;">1 ms</text>
+          </g>
+        </g>
+        <g transform="translate(80, 0)">
+          <g id="db-pill-2" class="pill-btn">
+            <rect class="pill-rect" width="72" height="36" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="36" y="18" style="font-size: 13.5px; font-weight: 600; fill: #475569;">2 ms</text>
+          </g>
+        </g>
+        <g transform="translate(160, 0)">
+          <g id="db-pill-4" class="pill-btn">
+            <rect class="pill-rect" width="72" height="36" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="36" y="18" style="font-size: 13.5px; font-weight: 600; fill: #475569;">4 ms</text>
+          </g>
+        </g>
+        <g transform="translate(240, 0)">
+          <g id="db-pill-8" class="pill-btn">
+            <rect class="pill-rect" width="76" height="36" rx="12" fill="#304ffe" />
+            <text class="pill-text" x="38" y="18" style="font-size: 13.5px; font-weight: 700; fill: #ffffff;">8 ms</text>
+          </g>
+        </g>
+        <g transform="translate(324, 0)">
+          <g id="db-pill-16" class="pill-btn">
+            <rect class="pill-rect" width="76" height="36" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="38" y="18" style="font-size: 13.5px; font-weight: 600; fill: #475569;">16 ms</text>
+          </g>
+        </g>
+        <g transform="translate(408, 0)">
+          <g id="db-pill-24" class="pill-btn">
+            <rect class="pill-rect" width="76" height="36" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="38" y="18" style="font-size: 13.5px; font-weight: 600; fill: #475569;">24 ms</text>
+          </g>
+        </g>
+        <g transform="translate(492, 0)">
+          <g id="db-pill-32" class="pill-btn">
+            <rect class="pill-rect" width="76" height="36" rx="12" fill="#edf2f7" />
+            <text class="pill-text" x="38" y="18" style="font-size: 13.5px; font-weight: 600; fill: #475569;">32 ms</text>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ======================== PAGE 3: 设置 (SETTINGS) ======================== -->
+  <g id="page-3" class="page-container" style="display: none;">
+    <!-- 1. 外观与材质卡片 -->
+    <g id="card-p3-1" class="dash-card" transform="translate(150, 76)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="236" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">外观与材质</text>
+      <text x="142" y="34" style="font-size: 13.5px; fill: #8a94a6;">调节毛玻璃 Acrylic 材质与卡片半透明度</text>
+
+      <!-- 恢复默认按钮 (双层嵌套隔离) -->
+      <g transform="translate(720, 16)">
+        <g id="btn-restore-appearance" class="pill-btn">
+          <rect class="pill-rect" width="102" height="34" rx="12" fill="#edf2f7" />
+          <text class="pill-text" x="51" y="17" style="font-size: 13.5px; font-weight: 600; fill: #475569;">恢复默认</text>
+        </g>
+      </g>
+
+      <!-- 面板内分组矩形 1 -->
+      <g transform="translate(24, 62)">
+        <rect width="798" height="62" rx="20" fill="#f8fafc" />
+        <text x="18" y="31" style="font-size: 14.5px; font-weight: 600; fill: #1e293b; dominant-baseline: central;">卡片背景透明度</text>
+        <text id="txt-card-opacity" x="778" y="31" style="font-size: 15px; font-weight: 700; fill: #304ffe; text-anchor: end; dominant-baseline: central;">45%</text>
+        <g id="card-opacity-track" class="dpi-slider-wrap" transform="translate(18, 48)">
+          <line x1="0" y1="0" x2="760" y2="0" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" />
+          <line id="card-opacity-fill" x1="0" y1="0" x2="342" y2="0" stroke="#304ffe" stroke-width="4" stroke-linecap="round" />
+          <circle id="card-opacity-thumb" cx="342" cy="0" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" />
+        </g>
+      </g>
+
+      <!-- 面板内分组矩形 2 -->
+      <g transform="translate(24, 138)">
+        <rect width="798" height="62" rx="20" fill="#f8fafc" />
+        <text x="18" y="31" style="font-size: 14.5px; font-weight: 600; fill: #1e293b; dominant-baseline: central;">整窗背景透明度</text>
+        <text id="txt-win-opacity" x="778" y="31" style="font-size: 15px; font-weight: 700; fill: #304ffe; text-anchor: end; dominant-baseline: central;">80%</text>
+        <g id="win-opacity-track" class="dpi-slider-wrap" transform="translate(18, 48)">
+          <line x1="0" y1="0" x2="760" y2="0" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" />
+          <line id="win-opacity-fill" x1="0" y1="0" x2="608" y2="0" stroke="#304ffe" stroke-width="4" stroke-linecap="round" />
+          <circle id="win-opacity-thumb" cx="608" cy="0" r="7.5" fill="#ffffff" stroke="#304ffe" stroke-width="3" filter="drop-shadow(0 2px 3px rgba(48,79,254,0.3))" />
+        </g>
+      </g>
+    </g>
+
+    <!-- 2. 程序与运行环境卡片 -->
+    <g id="card-p3-2" class="dash-card" transform="translate(150, 326)">
+      <g filter="url(#card-soft-shadow)">
+        <rect width="846" height="256" rx="20" fill="#ffffff" />
+      </g>
+      <text x="24" y="34" style="font-size: 18px; font-weight: 700; fill: #111827;">程序与运行环境</text>
+      <text x="822" y="34" style="font-size: 13.5px; fill: #8a94a6; text-anchor: end;">VT9 控制台 1.17.0</text>
+
+      <g transform="translate(24, 70)">
+        <text x="0" y="0" style="font-size: 14.5px; fill: #64748b;">适配设备</text>
+        <text x="100" y="0" style="font-size: 14.5px; font-weight: 600; fill: #111827;">雷柏 VT9 系列游戏鼠标 (支持 VID 24AE / PID 1849 &amp; 4191)</text>
+
+        <text x="0" y="40" style="font-size: 14.5px; fill: #64748b;">通信通道</text>
+        <text x="100" y="40" style="font-size: 14.5px; font-weight: 600; fill: #111827;">Win32 HID 异步 Overlapped 报文推送与 0xBA 命令管道</text>
+
+        <text x="0" y="80" style="font-size: 14.5px; fill: #64748b;">背景材质</text>
+        <text x="100" y="80" style="font-size: 14.5px; font-weight: 600; fill: #111827;">Windows 11 DWM 原生 Acrylic (亚克力实时硬件合成)</text>
+
+        <text x="0" y="120" style="font-size: 14.5px; fill: #64748b;">界面系统</text>
+        <text x="100" y="120" style="font-size: 14.5px; font-weight: 600; fill: #111827;">.NET Framework 4.8 + WPF 纯代码现代轻量控制台</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ==================== 底部固定状态栏 Footer ==================== -->
+  <g id="window-footer" transform="translate(0, 594)">
+    <g transform="translate(150, 4)">
+      <g id="btn-tray" class="pill-btn">
+        <rect class="pill-rect" width="116" height="36" rx="14" fill="#e2e8f0" />
+        <text class="pill-text" x="58" y="18" style="font-size: 13.5px; font-weight: 600; fill: #334155;">收起至托盘</text>
+      </g>
+    </g>
+    <g transform="translate(276, 4)">
+      <g id="btn-copy-diag" class="pill-btn">
+        <rect class="pill-rect" width="134" height="36" rx="14" fill="#e2e8f0" />
+        <text class="pill-text" x="67" y="18" style="font-size: 13.5px; font-weight: 600; fill: #334155;">复制诊断信息</text>
+      </g>
+    </g>
+    <text x="966" y="22" style="font-size: 13.5px; fill: #64748b; text-anchor: end; dominant-baseline: central;">未充电 · 最后接收 09:37:04 · 0 秒前</text>
+  </g>
+
+  <!-- ==================== 交互脚本 ==================== -->
+  <script type="text/javascript"><![CDATA[
+    (function() {
+      const svg = document.getElementById('rapoo-vt9-svg');
+      const state = {
+        activeTab: 0,
+        dpi: 1600,
+        pollRate: 1000,
+        lod: 3,
+        sleepMin: 30,
+        debounceMode: 'press',
+        debounceMs: 8,
+        switches: {
+          autoStart: false,
+          lowBatt: true,
+          motionSync: true,
+          dpi: [true, true, true, true, true, false, false]
+        }
+      };
+
+      const pages = [
+        document.getElementById('page-0'),
+        document.getElementById('page-1'),
+        document.getElementById('page-2'),
+        document.getElementById('page-3')
+      ];
+
+      function setSwitchVisual(switchElem, isOn) {
+        if (!switchElem) return;
+        const track = switchElem.querySelector('.switch-track');
+        const knob = switchElem.querySelector('.switch-knob');
+        if (track) track.setAttribute('fill', isOn ? '#304ffe' : '#cbd5e1');
+        if (knob) {
+          knob.style.transform = isOn ? 'translateX(22px)' : 'translateX(0px)';
+        }
+      }
+
+      function bindToggle(switchId, initialVal, onToggle) {
+        const elem = document.getElementById(switchId);
+        if (!elem) return;
+        let active = initialVal;
+        setSwitchVisual(elem, active);
+
+        elem.addEventListener('click', (e) => {
+          e.stopPropagation();
+          active = !active;
+          setSwitchVisual(elem, active);
+          if (onToggle) onToggle(active);
+        });
+      }
+
+      bindToggle('sw-auto-start', state.switches.autoStart, (on) => {
+        state.switches.autoStart = on;
+        const txt = document.getElementById('txt-auto-start-status');
+        if (txt) {
+          txt.textContent = on ? '已开启' : '未启用';
+          txt.style.fill = on ? '#111827' : '#8a94a6';
+        }
+      });
+
+      bindToggle('sw-low-batt', state.switches.lowBatt, (on) => {
+        state.switches.lowBatt = on;
+        const txt = document.getElementById('txt-low-batt-status');
+        if (txt) {
+          txt.textContent = on ? '已开启 • 阈值 20%' : '未启用';
+          txt.style.fill = on ? '#111827' : '#8a94a6';
+        }
+      });
+
+      bindToggle('sw-motion-sync', state.switches.motionSync, (on) => {
+        state.switches.motionSync = on;
+        const sumM = document.getElementById('sum-motion');
+        if (sumM) sumM.textContent = on ? '开' : '关';
+      });
+
+      state.switches.dpi.forEach((val, idx) => {
+        bindToggle('sw-dpi-' + idx, val, (on) => {
+          state.switches.dpi[idx] = on;
+          const txtVal = document.getElementById('txt-val-' + idx);
+          if (txtVal && !on) {
+            txtVal.textContent = '未启用';
+            txtVal.style.fill = '#94a3b8';
+          } else if (txtVal && on) {
+            const defaultMap = [800, 1200, 1600, 2000, 3200, 6400, 20000];
+            txtVal.textContent = defaultMap[idx];
+            txtVal.style.fill = '#111827';
+          }
+        });
+      });
+
+      function bindPillGroup(pillConfigs, onSelect) {
+        pillConfigs.forEach(cfg => {
+          const btn = document.getElementById(cfg.id);
+          if (!btn) return;
+
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pillConfigs.forEach(item => {
+              const el = document.getElementById(item.id);
+              if (!el) return;
+              const rect = el.querySelector('.pill-rect');
+              const txt = el.querySelector('.pill-text');
+              const isSelected = (item.id === cfg.id);
+
+              if (rect) rect.setAttribute('fill', isSelected ? '#304ffe' : '#edf2f7');
+              if (txt) {
+                txt.style.fill = isSelected ? '#ffffff' : '#475569';
+                txt.style.fontWeight = isSelected ? '700' : '600';
+              }
+            });
+
+            if (onSelect) onSelect(cfg.val);
+          });
+        });
+      }
+
+      bindPillGroup([
+        { id: 'dpi-pill-800', val: 800 },
+        { id: 'dpi-pill-1200', val: 1200 },
+        { id: 'dpi-pill-1600', val: 1600 },
+        { id: 'dpi-pill-2000', val: 2000 },
+        { id: 'dpi-pill-3200', val: 3200 },
+        { id: 'dpi-pill-6400', val: 6400 },
+        { id: 'dpi-pill-20000', val: 20000 }
+      ], (dpiVal) => {
+        state.dpi = dpiVal;
+        const hero = document.getElementById('dpi-hero-val');
+        if (hero) hero.textContent = dpiVal;
+        const sumD = document.getElementById('sum-dpi');
+        if (sumD) {
+          const list = [800, 1200, 1600, 2000, 3200, 6400, 20000];
+          const rank = list.indexOf(dpiVal) + 1;
+          sumD.textContent = (rank > 0 ? ('第 ' + rank + ' 档') : '当前') + ' • ' + dpiVal + ' DPI';
+        }
+      });
+
+      bindPillGroup([
+        { id: 'poll-pill-125', val: 125 },
+        { id: 'poll-pill-250', val: 250 },
+        { id: 'poll-pill-500', val: 500 },
+        { id: 'poll-pill-1000', val: 1000 }
+      ], (poll) => {
+        state.pollRate = poll;
+        const sumP = document.getElementById('sum-poll');
+        if (sumP) sumP.textContent = poll + ' Hz';
+      });
+
+      bindPillGroup([
+        { id: 'lod-pill-1', val: 1 },
+        { id: 'lod-pill-2', val: 2 },
+        { id: 'lod-pill-3', val: 3 }
+      ], (lod) => {
+        state.lod = lod;
+        const sumL = document.getElementById('sum-lod');
+        if (sumL) sumL.textContent = lod + ' mm';
+      });
+
+      bindPillGroup([
+        { id: 'sleep-pill-5', val: 5 },
+        { id: 'sleep-pill-10', val: 10 },
+        { id: 'sleep-pill-30', val: 30 },
+        { id: 'sleep-pill-60', val: 60 },
+        { id: 'sleep-pill-120', val: 120 }
+      ], (mins) => {
+        state.sleepMin = mins;
+        const txt = document.getElementById('txt-sleep-val');
+        if (txt) txt.textContent = mins + ' 分钟';
+        const sumS = document.getElementById('sum-sleep');
+        if (sumS) sumS.textContent = mins + ' 分钟';
+
+        const line = document.getElementById('sleep-fill-line');
+        const thumb = document.getElementById('sleep-thumb');
+        const xPos = (mins / 120) * 680;
+        if (line) line.setAttribute('x2', xPos);
+        if (thumb) thumb.setAttribute('cx', xPos);
+      });
+
+      function updateDebounceSummary() {
+        const sumDeb = document.getElementById('sum-debounce');
+        if (sumDeb) {
+          const modeCn = state.debounceMode === 'press' ? '按下' : '抬起';
+          sumDeb.textContent = state.debounceMs + ' ms · ' + modeCn;
+        }
+      }
+
+      bindPillGroup([
+        { id: 'pill-mode-press', val: 'press' },
+        { id: 'pill-mode-lift', val: 'lift' }
+      ], (mode) => {
+        state.debounceMode = mode;
+        updateDebounceSummary();
+      });
+
+      bindPillGroup([
+        { id: 'db-pill-1', val: 1 },
+        { id: 'db-pill-2', val: 2 },
+        { id: 'db-pill-4', val: 4 },
+        { id: 'db-pill-8', val: 8 },
+        { id: 'db-pill-16', val: 16 },
+        { id: 'db-pill-24', val: 24 },
+        { id: 'db-pill-32', val: 32 }
+      ], (ms) => {
+        state.debounceMs = ms;
+        updateDebounceSummary();
+      });
+
+      const tabOffsets = [0, 104, 208, 312];
+      const slider = document.getElementById('glass-slider');
+      const clipRect = document.getElementById('clip-rect');
+      const baseMaskRect = document.getElementById('base-mask-rect');
+
+      function playCardSlideIn(pageEl) {
+        if (!pageEl) return;
+        pageEl.classList.remove('play-in');
+
+        const cards = Array.from(pageEl.querySelectorAll(':scope > .dash-card'));
+        const items = cards.map(el => {
+          const m = /translate\(\s*(-?[\d.]+)[ ,]+(-?[\d.]+)\s*\)/.exec(el.getAttribute('transform') || '');
+          return { el, x: m ? parseFloat(m[1]) : 0, y: m ? parseFloat(m[2]) : 0 };
+        });
+
+        items.sort((a, b) =>
+          (a.y - b.y) || (a.x - b.x)
+        );
+
+        items.forEach((item, i) => {
+          item.el.style.animationDelay = (i * 55) + 'ms';
+        });
+
+        void pageEl.getBoundingClientRect();
+        pageEl.classList.add('play-in');
+      }
+
+      function snapDockToTab(tabIdx, wall = false) {
+        stopDockFrame();
+        const from = { y: dockMotion.y, sy: dockMotion.sy };
+        const dest = tabOffsets[tabIdx];
+        const duration = dockSnapDuration(dest - from.y, wall);
+        slider.dataset.snapKind = wall ? 'wall' : 'smooth';
+        slider.dataset.snapDuration = String(reducedDockMotion.matches ? 0 : duration);
+        if (reducedDockMotion.matches) { writeDockPose(dest, 1); return; }
+        const started = performance.now();
+        function settle(now) {
+          const t = Math.min(1, (now - started) / duration);
+          const e = dockEase(t, wall);
+          writeDockPose(from.y + (dest - from.y) * e, from.sy + (1 - from.sy) * e);
+          if (t < 1) dockFrame = requestAnimationFrame(settle);
+          else { dockFrame = null; writeDockPose(dest, 1); }
+        }
+        dockFrame = requestAnimationFrame(settle);
+      }
+
+      // The sole page-switch entry for both clicks and drag releases.
+      function switchTab(newTabIdx, wallRelease = false) {
+        if (!Number.isInteger(newTabIdx) || !pages[newTabIdx]) return;
+        snapDockToTab(newTabIdx, wallRelease);
+        if (newTabIdx === state.activeTab) return;
+        pages.forEach(p => {
+          p.classList.remove('play-in');
+          p.querySelectorAll(':scope > .dash-card').forEach(card => {
+            card.style.animationDelay = '';
+          });
+          p.style.transition = 'none';
+          p.style.display = 'none';
+          p.style.opacity = '0';
+        });
+        const pageEl = pages[newTabIdx];
+        pageEl.style.display = 'inline';
+        // Leave the parent at its default opacity; only individual cards fade in.
+        pageEl.style.removeProperty('opacity');
+        state.activeTab = newTabIdx;
+        playCardSlideIn(pageEl);
+      }
+
+      let lastDockDragEndTime = -Infinity;
+      [0, 1, 2, 3].forEach(idx => {
+        const hit = document.getElementById('tab-hit-' + idx);
+        if (hit) {
+          hit.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (performance.now() - lastDockDragEndTime < 120) return;
+            switchTab(idx);
+          });
+        }
+      });
+
+      const dockEl = document.getElementById('left-dock');
+      const dockMaximum = Math.max(312, Number(dockEl.querySelector('rect').getAttribute('height')) - 94);
+      const reducedDockMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let dockPointerDown = false, dockDragging = false;
+      let dockStartPointerY = 0, dockStartOffset = 0, dockPointerId = null, pendingTab = 0;
+      let dockFrame = null, dockFrameTime = 0;
+      const dockMotion = { y: 0, raw: 0, v: 0, sy: 1, sx: 1 };
+
+      // BEGIN DOCK PHYSICS: pure functions, shared numerical model with WPF.
+      function dockRubberClamp(raw, maximum) {
+        if (raw < 0) return -6 * (1 - Math.exp(raw / 40));
+        if (raw > maximum) return maximum + 6 * (1 - Math.exp(-(raw - maximum) / 40));
+        return raw;
+      }
+      function dockPressure(m, maximum) {
+        if (m.raw < 0 && m.y < 4) return Math.min(1, -m.raw / 60);
+        if (m.raw > maximum && m.y > maximum - 4) return Math.min(1, (m.raw - maximum) / 60);
+        return 0;
+      }
+      function dockStep(m, seconds, maximum) {
+        const dt = Math.max(0.001, Math.min(0.05, seconds));
+        const before = m.y;
+        m.y += (dockRubberClamp(m.raw, maximum) - m.y) * (1 - Math.exp(-dt / 0.075));
+        m.v += ((m.y - before) / dt - m.v) * (1 - Math.exp(-dt / 0.045));
+        const pressure = dockPressure(m, maximum);
+        const stretch = Math.min(0.18, Math.abs(m.v) / 2400 * 0.18);
+        const shape = pressure > 0 ? 1 - 0.07 * pressure : 1 + stretch;
+        m.sy += (shape - m.sy) * (1 - Math.exp(-dt / 0.065));
+        m.sx = 1 / m.sy;
+      }
+      function dockSnapDuration(distance, wall) {
+        return Math.max(170, Math.min(420, 170 + Math.abs(distance) * 0.55)) + (wall ? 70 : 0);
+      }
+      function dockEase(t, wall) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        const bezier = (u, a, b) => 3*(1-u)*(1-u)*u*a + 3*(1-u)*u*u*b + u*u*u;
+        let lo = 0, hi = 1;
+        for (let i = 0; i < 28; i++) {
+          const mid = (lo + hi) / 2;
+          if (bezier(mid, 0.2, 0.3) < t) lo = mid; else hi = mid;
+        }
+        return bezier((lo + hi)/2, wall ? 1.22 : 0.9, 1);
+      }
+      // END DOCK PHYSICS
+
+      function nearestDockTab(y) { return Math.max(0, Math.min(3, Math.floor(y / 104 + 0.5))); }
+      function stopDockFrame() {
+        if (dockFrame !== null) cancelAnimationFrame(dockFrame);
+        dockFrame = null;
+      }
+      function writeDockPose(y, sy) {
+        dockMotion.y = y; dockMotion.sy = sy; dockMotion.sx = 1 / sy;
+        const transform = `translateY(${y}px) translate(70px, 123px) scale(${dockMotion.sx}, ${sy}) translate(-70px, -123px)`;
+        slider.style.transition = clipRect.style.transition = baseMaskRect.style.transition = 'none';
+        slider.style.transform = clipRect.style.transform = baseMaskRect.style.transform = transform;
+      }
+      function followDock(now) {
+        if (!dockPointerDown || !dockDragging) { dockFrame = null; return; }
+        dockStep(dockMotion, (now - dockFrameTime) / 1000, dockMaximum);
+        dockFrameTime = now;
+        writeDockPose(dockMotion.y, dockMotion.sy);
+        pendingTab = nearestDockTab(dockMotion.y);
+        dockFrame = requestAnimationFrame(followDock);
+      }
+      function getDockLocalY(e) {
+        const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+        return pt.matrixTransform(dockEl.getScreenCTM().inverse()).y;
+      }
+      dockEl.addEventListener('pointerdown', e => {
+        if (e.button !== 0 || !e.isPrimary) return;
+        const y = getDockLocalY(e);
+        if (y < 76 || y > 582) return;
+        stopDockFrame();
+        dockPointerDown = true; dockDragging = false;
+        dockStartPointerY = y; dockStartOffset = dockMotion.y;
+        dockMotion.raw = dockMotion.y; dockMotion.v = 0;
+        dockPointerId = e.pointerId; pendingTab = state.activeTab;
+      });
+      dockEl.addEventListener('pointermove', e => {
+        if (!dockPointerDown || e.pointerId !== dockPointerId) return;
+        if (e.pointerType === 'mouse' && (e.buttons & 1) === 0) { cancelDockDrag(); return; }
+        const delta = getDockLocalY(e) - dockStartPointerY;
+        if (!dockDragging && Math.abs(delta) > 4) {
+          dockDragging = true;
+          try { dockEl.setPointerCapture(dockPointerId); } catch (_) {}
+        }
+        if (!dockDragging) return;
+        dockMotion.raw = dockStartOffset + delta;
+        if (reducedDockMotion.matches) {
+          writeDockPose(Math.max(0, Math.min(dockMaximum, dockMotion.raw)), 1);
+          pendingTab = nearestDockTab(dockMotion.y);
+        } else if (dockFrame === null) {
+          dockFrameTime = performance.now();
+          dockFrame = requestAnimationFrame(followDock);
+        }
+      });
+      function releaseDockPointer() {
+        const id = dockPointerId;
+        dockPointerDown = false; dockDragging = false; dockPointerId = null;
+        stopDockFrame();
+        if (id !== null) { try { dockEl.releasePointerCapture(id); } catch (_) {} }
+      }
+      function finishDockDrag(e) {
+        if (!dockPointerDown || e.pointerId !== dockPointerId) return;
+        const dragged = dockDragging;
+        const wall = dockPressure(dockMotion, dockMaximum) > 0 && dockMotion.sy < 0.995;
+        pendingTab = nearestDockTab(dockMotion.y);
+        releaseDockPointer();
+        if (!dragged) return;
+        lastDockDragEndTime = performance.now();
+        switchTab(pendingTab, wall);
+      }
+      function cancelDockDrag() {
+        if (!dockPointerDown) return;
+        if (dockDragging) lastDockDragEndTime = performance.now();
+        const wall = dockPressure(dockMotion, dockMaximum) > 0 && dockMotion.sy < 0.995;
+        releaseDockPointer();
+        switchTab(state.activeTab, wall);
+      }
+      dockEl.addEventListener('pointerup', finishDockDrag);
+      dockEl.addEventListener('pointercancel', cancelDockDrag);
+      dockEl.addEventListener('lostpointercapture', cancelDockDrag);
+      window.addEventListener('blur', cancelDockDrag);
+
+      function bindSliderDrag(wrapEl, { minX, maxX, onDrag, onRelease, enabled }) {
+        if (!wrapEl) return;
+        let dragging = false;
+
+        function toLocalX(e) {
+          const pt = wrapEl.ownerSVGElement.createSVGPoint();
+          pt.x = e.clientX; pt.y = e.clientY;
+          return pt.matrixTransform(wrapEl.getScreenCTM().inverse()).x;
+        }
+        const clampX = (x) => Math.max(minX, Math.min(maxX, x));
+
+        wrapEl.addEventListener('pointerdown', (e) => {
+          if (enabled && !enabled()) return;
+          e.stopPropagation();
+          dragging = true;
+          try { wrapEl.setPointerCapture(e.pointerId); } catch (_) {}
+          onDrag(clampX(toLocalX(e)));
+        });
+
+        wrapEl.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          onDrag(clampX(toLocalX(e)));
+        });
+
+        const finish = (e) => {
+          if (!dragging) return;
+          dragging = false;
+          try { wrapEl.releasePointerCapture(e.pointerId); } catch (_) {}
+          if (onRelease) onRelease(clampX(toLocalX(e)));
+        };
+
+        wrapEl.addEventListener('pointerup', finish);
+        wrapEl.addEventListener('pointercancel', finish);
+      }
+
+      // 1. DPI 7 档滑轨接线
+      for (let i = 0; i < 7; i++) {
+        const wrap = document.getElementById('slider-wrap-' + i);
+        const line = document.getElementById('fill-line-' + i);
+        const thumb = document.getElementById('thumb-' + i);
+        const txtVal = document.getElementById('txt-val-' + i);
+
+        bindSliderDrag(wrap, {
+          minX: 0, maxX: 480,
+          enabled: () => state.switches.dpi[i],
+          onDrag: (x) => {
+            const dpi = Math.max(100, Math.min(8000, Math.round(x / 0.06 / 50) * 50));
+            const px = dpi * 0.06;
+            if (line) line.setAttribute('x2', px);
+            if (thumb) thumb.setAttribute('cx', px);
+            if (txtVal) txtVal.textContent = dpi;
+          }
+        });
+      }
+
+      // 2. 休眠时间滑轨接线 (松手吸附最近 pill)
+      const SLEEP_STEPS = [5, 10, 30, 60, 120];
+      const SLEEP_W = 680;
+      let sleepDragX = null;
+
+      bindSliderDrag(document.getElementById('sleep-slider-track'), {
+        minX: 0, maxX: SLEEP_W,
+        onDrag: (x) => {
+          sleepDragX = x;
+          const mins = Math.round(x / SLEEP_W * 120);
+          const l = document.getElementById('sleep-fill-line');
+          const t = document.getElementById('sleep-thumb');
+          const txt = document.getElementById('txt-sleep-val');
+          if (l) l.setAttribute('x2', x);
+          if (t) t.setAttribute('cx', x);
+          if (txt) txt.textContent = mins + ' 分钟';
+        },
+        onRelease: () => {
+          if (sleepDragX == null) return;
+          const approx = sleepDragX / SLEEP_W * 120;
+          const nearest = SLEEP_STEPS.reduce((a, b) =>
+            Math.abs(b - approx) < Math.abs(a - approx) ? b : a);
+          sleepDragX = null;
+          const pill = document.getElementById('sleep-pill-' + nearest);
+          if (pill) pill.dispatchEvent(new MouseEvent('click', { bubbles: false }));
+        }
+      });
+
+      // 3. 卡片与整窗背景透明度滑轨接线
+      [
+        { track: 'card-opacity-track', fill: 'card-opacity-fill', thumb: 'card-opacity-thumb', txt: 'txt-card-opacity' },
+        { track: 'win-opacity-track', fill: 'win-opacity-fill', thumb: 'win-opacity-thumb', txt: 'txt-win-opacity' }
+      ].forEach(({ track, fill, thumb, txt }) => {
+        const line = document.getElementById(fill);
+        const dot = document.getElementById(thumb);
+        const label = document.getElementById(txt);
+        bindSliderDrag(document.getElementById(track), {
+          minX: 0, maxX: 760,
+          onDrag: (x) => {
+            const pct = Math.round(x / 760 * 100);
+            const px = pct / 100 * 760;
+            if (line) line.setAttribute('x2', px);
+            if (dot) dot.setAttribute('cx', px);
+            if (label) label.textContent = pct + '%';
+          }
+        });
+      });
+
+      // 首屏加载：page-0 卡片依次滑入
+      requestAnimationFrame(() => {
+        playCardSlideIn(pages[0]);
+      });
+    })();
+  ]]></script>
+</svg>
