@@ -117,3 +117,7 @@ patches/              历史改动的独立补丁与合并清单
 - 电量查询参考：[Tsifrokayf / Device-Battery-Tray](https://github.com/Tsifrokayf/Device-Battery-Tray)
 
 本程序为独立编写，与雷柏官方无关。
+
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE)，可自由使用、修改与分发，保留版权声明即可。
