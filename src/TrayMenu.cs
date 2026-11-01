@@ -5,12 +5,13 @@ using System.Windows.Forms;
 
 namespace VT9Status
 {
-    // 托盘菜单按设计稿的克制规则重绘：白底、靛蓝 7% 悬停、无边框重线、12px 圆角。
+    // 托盘菜单按设计稿的克制规则重绘：白底、靛蓝 7% 悬停、无边框重线、10px 圆角。
+    // 结构上把“设备摘要”拆成两行（DPI / 电量与连接），让每次右键先看到当前状态再看操作。
     // 菜单只做窗口已有的操作，不新增对设备的写入路径。
     internal sealed partial class MainForm
     {
         private ContextMenuStrip trayMenu;
-        private ToolStripMenuItem trayHeader, trayPosition, trayAutoStart;
+        private ToolStripMenuItem trayHeader, traySubHeader, trayPosition, trayAutoStart, trayExit;
 
         private void BuildTrayMenu()
         {
@@ -19,18 +20,29 @@ namespace VT9Status
                 Renderer = new TrayMenuRenderer(),
                 ShowImageMargin = false,
                 ShowCheckMargin = true,
-                Font = Fonts.Gdi(Fonts.Body, Fonts.Regular),
-                Padding = new Padding(6, 6, 6, 6),
+                Font = Fonts.Gdi(Fonts.Chip, Fonts.Regular),
+                Padding = new Padding(0, 6, 0, 6),
                 DropShadowEnabled = false,
-                MinimumSize = new Size(216, 0),
+                MinimumSize = new Size(200, 0),
                 BackColor = Color.White,
                 ForeColor = Theme.Ink
             };
-            trayHeader = TrayMenuItem("VT9 · 等待上报", null);
+
+            // 摘要两行：主行设备与 DPI，副行电量与连接状态。
+            trayHeader = TrayMenuItem("VT9", null);
             trayHeader.Name = "trayHeader";
             trayHeader.Enabled = false;
-            trayHeader.Font = Fonts.Gdi(Fonts.Body, Fonts.Bold);
+            trayHeader.Font = Fonts.Gdi(Fonts.Sub, Fonts.Bold);
+            trayHeader.Padding = new Padding(2, 3, 2, 0);
             trayMenu.Items.Add(trayHeader);
+
+            traySubHeader = TrayMenuItem("尚未收到电量", null);
+            traySubHeader.Name = "traySubHeader";
+            traySubHeader.Enabled = false;
+            traySubHeader.Font = Fonts.Gdi(Fonts.Meta, Fonts.Regular);
+            traySubHeader.Padding = new Padding(2, 0, 2, 4);
+            trayMenu.Items.Add(traySubHeader);
+
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add(TrayMenuItem("显示状态", delegate { ShowPanel(); }));
             trayPosition = TrayMenuItem("读取配置", delegate { ShowPanel(); RunReadConfig(); });
@@ -46,7 +58,10 @@ namespace VT9Status
             };
             trayMenu.Items.Add(trayAutoStart);
             trayMenu.Items.Add(new ToolStripSeparator());
-            trayMenu.Items.Add(TrayMenuItem("退出", delegate { ExitApp(); }));
+            trayExit = TrayMenuItem("退出", delegate { ExitApp(); });
+            trayExit.Name = "trayExit";
+            trayMenu.Items.Add(trayExit);
+
             trayMenu.Opening += delegate { UpdateTrayMenu(); };
             trayMenu.SizeChanged += delegate { ShapeTrayMenu(); };
         }
@@ -54,7 +69,8 @@ namespace VT9Status
         private ToolStripMenuItem TrayMenuItem(string caption, EventHandler action)
         {
             ToolStripMenuItem item = new ToolStripMenuItem(caption);
-            item.Padding = new Padding(2, 5, 2, 5);
+            // 32px 行高：13.5px 文字 + 上下各 7px，比默认的紧凑行距更好点中。
+            item.Padding = new Padding(2, 7, 2, 7);
             item.ForeColor = Theme.Ink;
             if (action != null) item.Click += action;
             return item;
@@ -62,10 +78,13 @@ namespace VT9Status
 
         private void UpdateTrayMenu()
         {
-            string state = level.HasValue ? "电量 " + level.Value + "%" : "等待上报";
             Reading shown = snapshot.DisplayReading;
-            if (shown != null && level.HasValue) state = shown.Dpi.ToString() + " DPI · " + state;
-            trayHeader.Text = "VT9 · " + state;
+            trayHeader.Text = shown != null && level.HasValue ? "VT9 · " + shown.Dpi + " DPI" : "VT9";
+
+            string state = level.HasValue ? "电量 " + level.Value + "%" : "尚未收到电量";
+            if (snapshot.Open) state += charge.Fresh && charge.Last != null && charge.Last.Charging ? " · 充电中" : " · 已连接";
+            traySubHeader.Text = state;
+
             trayAutoStart.Checked = autoStartOn;
             trayPosition.Enabled = !configBusy;
             trayPosition.Text = configBusy ? "正在读取配置…" : "读取配置";
@@ -78,6 +97,7 @@ namespace VT9Status
         {
             bool restore = autoStartOn;
             autoStartOn = true;
+            UpdateTrayMenu();
             trayMenu.Show(new Point(240, 240));
             System.Windows.Threading.DispatcherTimer shot = new System.Windows.Threading.DispatcherTimer
             { Interval = TimeSpan.FromMilliseconds(700) };
@@ -140,8 +160,8 @@ namespace VT9Status
             public override Color ImageMarginGradientBegin { get { return Color.White; } }
             public override Color ImageMarginGradientMiddle { get { return Color.White; } }
             public override Color ImageMarginGradientEnd { get { return Color.White; } }
-            public override Color SeparatorDark { get { return Color.FromArgb(230, 234, 236); } }
-            public override Color SeparatorLight { get { return Color.FromArgb(230, 234, 236); } }
+            public override Color SeparatorDark { get { return Color.FromArgb(233, 238, 243); } }
+            public override Color SeparatorLight { get { return Color.FromArgb(233, 238, 243); } }
         }
 
         private sealed class TrayMenuRenderer : ToolStripProfessionalRenderer
@@ -162,17 +182,31 @@ namespace VT9Status
 
             protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
             {
-                using (Pen pen = new Pen(Color.FromArgb(230, 234, 236)))
+                using (Pen pen = new Pen(Color.FromArgb(233, 238, 243)))
                 {
                     int y = e.Item.Height / 2;
                     e.Graphics.DrawLine(pen, 12, y, e.Item.Width - 12, y);
                 }
             }
 
+            // 悬停画成内缩的圆角块，而不是铺满整行的矩形——菜单底色保持干净，视觉重心落在文字上。
+            protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+            {
+                if (!e.Item.Selected || !e.Item.Enabled) return;
+                bool exit = e.Item.Name == "trayExit";
+                Rectangle bounds = new Rectangle(6, 2, e.Item.Width - 12, e.Item.Height - 4);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (GraphicsPath path = RoundRect(bounds, 8))
+                using (SolidBrush fill = new SolidBrush(exit ? Color.FromArgb(253, 241, 240) : Color.FromArgb(241, 242, 253)))
+                    e.Graphics.FillPath(fill, path);
+            }
+
             protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
             {
-                if (e.Item.Name == "trayHeader") e.TextColor = Color.FromArgb(74, 86, 82);
-                else if (!e.Item.Enabled) e.TextColor = Color.FromArgb(138, 148, 145);
+                if (e.Item.Name == "trayHeader") e.TextColor = Theme.Ink;
+                else if (e.Item.Name == "traySubHeader") e.TextColor = Theme.Muted;
+                else if (!e.Item.Enabled) e.TextColor = Theme.DisabledInk;
+                else if (e.Item.Name == "trayExit" && e.Item.Selected) e.TextColor = Theme.CloseHover;
                 else e.TextColor = Theme.Ink;
                 base.OnRenderItemText(e);
             }
