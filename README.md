@@ -43,7 +43,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\pack.ps1
 
 # 升版本 + 截图 + 压缩 + 归档 + 装到根目录
-powershell -NoProfile -ExecutionPolicy Bypass -File .\pack.ps1 -Version 2.0.0 -Preview -Zip -Archive -Install
+powershell -NoProfile -ExecutionPolicy Bypass -File .\pack.ps1 -Version 2.0.1 -Preview -Zip -Archive -Install
 ```
 
 | 参数 | 作用 |
@@ -99,7 +99,7 @@ patches/              历史改动的独立补丁与合并清单
 
 ## 版本
 
-当前 **2.0.0**。逐版改动与验证结论见：
+当前 **2.0.1**。逐版改动与验证结论见：
 
 `验证记录.md`、`验证记录-1.1.md` … `验证记录-1.18-SVG改版.md`、
 `验证记录-1.18.1-托盘可见性.md`、`验证记录-1.18.2-关闭路径与顶栏收敛.md`、
