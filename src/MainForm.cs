@@ -309,5 +309,12 @@ namespace VT9Status
             int x, int y, int width, int height, uint flags);
         private const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004,
             SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020;
+
+        // 窗口圆角只有一个来源：DWM 的属性 33 = DWMWCP_ROUND，半径固定 8 DIP（125% 缩放下 10 设备像素），
+        // 应用没有接口改成 24 那一档（ROUNDSMALL 是 4，比 8 还小）。
+        // WPF 这边的 CornerRadius 必须跟着这个值走，否则两套弧不同心：外圈是 DWM 的 8 DIP 切边，
+        // 内圈是 WPF 的描边弧，中间那条 Acrylic + 白色蒙层的三角区就把「两层圆角」显出来了。
+        // 注意 Border.CornerRadius 只裁背景与描边，不裁 Child，所以半径改了描边位置也就跟着改了。
+        internal const double WindowCornerRadius = 8;
     }
 }

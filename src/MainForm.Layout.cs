@@ -330,6 +330,10 @@ namespace VT9Status
         {
             surface.Width = 1020; surface.Height = 606;
             surface.Background = WindowOverlayBrush;
+            // 蒙层（surface.Background）也要按同一个圆角裁掉四个角：
+            // Border.CornerRadius 只裁自己的背景与描边，不裁 Child，所以不裁的话蒙层会以直角
+            // 铺满窗口矩形，正好盖住 DWM 那道 8 DIP 的弧，四角又变回「方的白角 + 里面一道弧」。
+            surface.Clip = new RectangleGeometry(new Rect(0, 0, 1020, 606), WindowCornerRadius, WindowCornerRadius);
             surface.LayoutUpdated += delegate
             {
                 if (panelPages != null && (int)activePage >= 0)
@@ -337,7 +341,10 @@ namespace VT9Status
             };
             Content = new Border
             {
-                CornerRadius = new CornerRadius(24), BorderThickness = new Thickness(1),
+                // 半径跟 DWM 的系统圆角对齐（见 MainForm.WindowCornerRadius）。原先这里是 24，
+                // 与 DWM 的 8 DIP 切边不同心，两者之间会露出一条 24→8 的三角区，
+                // 看起来就是窗口最外围有两层圆角。描边仍只有 1px，只是弧变小了。
+                CornerRadius = new CornerRadius(WindowCornerRadius), BorderThickness = new Thickness(1),
                 BorderBrush = Theme.Brush(Theme.WindowStroke), Child = surface
             };
 

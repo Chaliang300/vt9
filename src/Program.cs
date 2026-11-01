@@ -71,6 +71,7 @@ namespace VT9Status
                 if (Array.IndexOf(args, "--ui-preview-bg") >= 0) { UiPreview(true, false, PageArgument(args)); return; }
                 if (Array.IndexOf(args, "--ui-preview-live") >= 0) { UiPreview(true, true, PageArgument(args)); return; }
                 if (Array.IndexOf(args, "--ui-motion-test") >= 0) { UiMotionTest(); return; }
+                if (Array.IndexOf(args, "--corner-diag") >= 0) { MainForm.CornerDiagnostic(); return; }
                 if (Array.IndexOf(args, "--manual-check") >= 0) { ManualCheckDiagnostic(); return; }
                 int diagnostic = Array.IndexOf(args, "--diagnose");
                 if (diagnostic >= 0)
